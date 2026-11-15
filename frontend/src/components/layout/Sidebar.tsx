@@ -83,10 +83,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, collapsed, onClose, onTo
           <Building2 className="h-5 w-5 text-[#14110f]" />
         </div>
         {!collapsed && <div className="flex flex-col">
-          <span className="font-serif text-lg font-bold tracking-tight text-hotel-text">
+          <span className="font-serif text-lg font-bold tracking-tight text-white">
             Hotel<span className="text-hotel-accent">OS</span>
           </span>
-          <span className="text-[9px] uppercase tracking-widest text-hotel-muted font-medium">
+          <span className="text-[10px] uppercase tracking-widest text-white/55 font-medium">
             Property PMS
           </span>
         </div>}
@@ -99,11 +99,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, collapsed, onClose, onTo
           <span className="text-[10px] uppercase font-bold tracking-wider text-hotel-gold">
             Current Property
           </span>
-          <span className="truncate font-medium text-hotel-text">
+          <span className="truncate font-medium text-white">
             Grand Residence Dhaka
           </span>
         </div>
-        <ChevronDown className="h-3.5 w-3.5 text-hotel-muted" />
+        <ChevronDown className="h-3.5 w-3.5 text-white/55" />
       </div>}
 
       {/* Nav Navigation */}
@@ -157,10 +157,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, collapsed, onClose, onTo
               {user?.first_name?.[0] || 'A'}
             </div>
             {!collapsed && <div className="flex flex-col min-w-0">
-              <span className="truncate text-xs font-semibold text-hotel-text">
+              <span className="truncate text-xs font-semibold text-white">
                 {user ? `${user.first_name} ${user.last_name}` : 'Admin'}
               </span>
-              <span className="truncate text-[10px] capitalize text-hotel-muted">
+              <span className="truncate text-[11px] capitalize text-white/55">
                 {user?.role?.replace(/_/g, ' ') || 'Super Admin'}
               </span>
             </div>}
@@ -168,7 +168,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, collapsed, onClose, onTo
           {!collapsed && <button
             onClick={logout}
             title="Log out"
-            className="rounded-md p-1.5 text-hotel-muted hover:bg-white/10 hover:text-rose-400 transition-colors"
+            aria-label="Log out"
+            className="flex h-10 w-10 items-center justify-center rounded-md text-white/55 hover:bg-white/10 hover:text-rose-300 transition-colors"
           >
             <LogOut className="h-4 w-4" />
           </button>}

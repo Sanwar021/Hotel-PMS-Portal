@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Building2, CheckCircle2, Eye, EyeOff, LockKeyhole, ShieldCheck, User } from 'lucide-react';
+import { ArrowRight, Building2, CheckCircle2, Eye, EyeOff, LockKeyhole, ShieldCheck, User, UserRound } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import hotelBackground from '../../assets/hotel-login-bg.png';
 
@@ -16,6 +16,7 @@ export const LoginPage: React.FC = () => {
   const [password, setPassword] = useState('admin123');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [helpVisible, setHelpVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -41,19 +42,19 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#06131d] bg-cover bg-center text-white" style={{ backgroundImage: `url(${hotelBackground})` }}>
+    <main className="relative min-h-screen min-h-[100svh] overflow-x-clip overflow-y-auto bg-[#06131d] bg-cover bg-center text-white" style={{ backgroundImage: `url(${hotelBackground})` }}>
       <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(3,13,22,.55)_0%,rgba(3,13,22,.28)_47%,rgba(3,13,22,.68)_100%)]" />
       <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,14,23,.2)_0%,rgba(4,14,23,.08)_55%,rgba(4,14,23,.72)_100%)]" />
 
-      <div className="relative mx-auto flex min-h-screen max-w-[1500px] flex-col px-5 py-5 sm:px-8 lg:px-12">
+      <div className="relative mx-auto flex min-h-screen min-h-[100svh] max-w-[1500px] flex-col px-[clamp(1rem,4vw,3rem)] py-[clamp(1rem,2.5vw,1.5rem)]">
         <header className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-amber-300/40 bg-amber-400/15 shadow-[0_10px_35px_rgba(0,0,0,.25)] backdrop-blur-xl">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-amber-300/40 bg-amber-400/15 shadow-[0_10px_35px_rgba(0,0,0,.25)] backdrop-blur-xl">
               <Building2 className="h-6 w-6 text-[#f6c969]" />
             </div>
             <div>
               <div className="font-serif text-[22px] font-semibold tracking-tight">Hotel<span className="text-[#f2b843]">OS</span></div>
-              <div className="text-[9px] font-bold uppercase tracking-[.26em] text-white/55">Property management</div>
+              <div className="text-[10px] font-bold uppercase tracking-[.2em] text-white/65">Property management</div>
             </div>
           </div>
           <div className="hidden items-center gap-2 rounded-full border border-white/15 bg-[#071722]/55 px-4 py-2 text-[11px] font-semibold text-white/75 backdrop-blur-xl sm:flex">
@@ -61,58 +62,71 @@ export const LoginPage: React.FC = () => {
           </div>
         </header>
 
-        <div className="flex flex-1 items-center justify-end py-8 lg:py-10">
-          <section className="w-full max-w-[460px] overflow-hidden rounded-[28px] border border-white/45 bg-[#fffdf8]/95 text-[#132632] shadow-[0_32px_100px_rgba(0,0,0,.48)] backdrop-blur-2xl">
-            <div className="h-1.5 bg-gradient-to-r from-[#f5cf71] via-[#e5a32c] to-[#bd7413]" />
-            <div className="p-6 sm:p-8">
-              <div className="mb-7">
-                <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#e2a633]/25 bg-[#fff4d8] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[.16em] text-[#9b6714]">
-                  <ShieldCheck className="h-3.5 w-3.5" /> Enterprise PMS
+        <div className="flex flex-1 items-center justify-center py-[clamp(1.5rem,5vh,3rem)] lg:justify-end">
+          <section
+            aria-labelledby="login-title"
+            className="relative w-full max-w-[420px] overflow-hidden rounded-bl-[26px] rounded-br-[26px] rounded-tr-[26px] rounded-tl-[clamp(4.5rem,14vw,7rem)] border border-[#d8a848]/35 bg-[linear-gradient(150deg,rgba(25,41,50,.97),rgba(7,20,29,.97))] text-[#f8f1e5] shadow-[0_35px_100px_rgba(0,0,0,.62),inset_0_1px_0_rgba(255,255,255,.08)] backdrop-blur-2xl"
+          >
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#efc15d] to-transparent" />
+            <div className="p-[clamp(1.35rem,5vw,2.25rem)] pt-[clamp(2.25rem,7vw,3.25rem)]">
+              <div className="mb-6 flex flex-col items-center text-center">
+                <div className="relative flex h-20 w-20 items-center justify-center rounded-full border border-[#edc46d]/45 bg-[radial-gradient(circle_at_35%_25%,rgba(238,193,93,.28),rgba(7,22,31,.8))] shadow-[0_15px_38px_rgba(0,0,0,.4),0_0_0_8px_rgba(232,179,72,.06)]">
+                  <UserRound className="h-10 w-10 text-[#f0c86d]" strokeWidth={1.5} />
+                  <span className="absolute bottom-0.5 right-0.5 h-3.5 w-3.5 rounded-full border-2 border-[#142631] bg-emerald-400" />
                 </div>
-                <h1 className="font-serif text-3xl font-semibold tracking-tight text-[#0c2330] sm:text-[34px]">Welcome back.</h1>
-                <p className="mt-2 max-w-sm text-sm leading-6 text-[#60717a]">Sign in to manage today’s stays, service and property operations.</p>
+                <div className="mt-4 inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[.18em] text-[#e8bd63]">
+                  <ShieldCheck className="h-3.5 w-3.5" /> Secure staff access
+                </div>
+                <h1 id="login-title" className="mt-2 font-serif text-[clamp(1.65rem,6vw,2rem)] font-semibold leading-tight tracking-tight text-[#fff8ed]">Welcome back</h1>
+                <p className="mt-1.5 text-sm leading-6 text-[#aebdc3]">Sign in to HotelOS operations.</p>
               </div>
 
-              {error && <div role="alert" className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-medium text-rose-700">{error}</div>}
+              {error && <div id="login-error" role="alert" aria-live="assertive" className="mb-4 rounded-xl border border-rose-400/35 bg-rose-950/45 px-4 py-3 text-sm font-medium text-rose-100">{error}</div>}
+              {helpVisible && <div role="status" className="mb-4 rounded-xl border border-[#e2b453]/30 bg-[#e2b453]/10 px-4 py-3 text-xs leading-5 text-[#f4d58f]">Please contact your HotelOS administrator to reset your password.</div>}
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <label className="block">
-                  <span className="mb-2 block text-[11px] font-bold uppercase tracking-[.12em] text-[#4d606b]">Username or email</span>
+                  <span className="mb-1 block text-[10px] font-bold uppercase tracking-[.15em] text-[#c3cdd1]">Username or email</span>
                   <span className="relative block">
-                    <User className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9a7b40]" />
-                    <input required autoComplete="username" value={username} onChange={(event) => setUsername(event.target.value)} className="h-12 w-full rounded-xl border border-[#dce1df] bg-white pl-11 pr-4 text-sm text-[#142833] outline-none transition placeholder:text-[#a0aaae] focus:border-[#d99a26] focus:ring-4 focus:ring-[#e9b84b]/15" placeholder="Enter your username" />
+                    <User className="absolute left-1 top-1/2 h-4 w-4 -translate-y-1/2 text-[#e0b65b]" />
+                    <input required autoComplete="username" aria-invalid={!!error} aria-describedby={error ? 'login-error' : undefined} value={username} onChange={(event) => setUsername(event.target.value)} className="h-12 w-full border-x-0 border-b border-t-0 border-[#6f8189] bg-transparent pl-8 pr-2 text-base text-[#fff8ec] outline-none transition placeholder:text-[#84959c] focus:border-[#edbd59] focus:ring-0" placeholder="Email ID or username" />
                   </span>
                 </label>
 
                 <label className="block">
-                  <span className="mb-2 block text-[11px] font-bold uppercase tracking-[.12em] text-[#4d606b]">Password</span>
+                  <span className="mb-1 block text-[10px] font-bold uppercase tracking-[.15em] text-[#c3cdd1]">Password</span>
                   <span className="relative block">
-                    <LockKeyhole className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9a7b40]" />
-                    <input required autoComplete="current-password" type={showPassword ? 'text' : 'password'} value={password} onChange={(event) => setPassword(event.target.value)} className="h-12 w-full rounded-xl border border-[#dce1df] bg-white pl-11 pr-12 text-sm text-[#142833] outline-none transition placeholder:text-[#a0aaae] focus:border-[#d99a26] focus:ring-4 focus:ring-[#e9b84b]/15" placeholder="Enter your password" />
-                    <button type="button" onClick={() => setShowPassword((visible) => !visible)} aria-label={showPassword ? 'Hide password' : 'Show password'} className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-2 text-[#71818a] transition hover:bg-[#f4efe5] hover:text-[#9b6714]">
+                    <LockKeyhole className="absolute left-1 top-1/2 h-4 w-4 -translate-y-1/2 text-[#e0b65b]" />
+                    <input required autoComplete="current-password" aria-invalid={!!error} aria-describedby={error ? 'login-error' : undefined} type={showPassword ? 'text' : 'password'} value={password} onChange={(event) => setPassword(event.target.value)} className="h-12 w-full border-x-0 border-b border-t-0 border-[#6f8189] bg-transparent pl-8 pr-12 text-base text-[#fff8ec] outline-none transition placeholder:text-[#84959c] focus:border-[#edbd59] focus:ring-0" placeholder="Password" />
+                    <button type="button" onClick={() => setShowPassword((visible) => !visible)} aria-label={showPassword ? 'Hide password' : 'Show password'} aria-pressed={showPassword} className="absolute right-0 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-lg text-[#9eacb2] transition hover:bg-white/5 hover:text-[#f1c76c]">
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </span>
                 </label>
 
-                <button type="submit" disabled={loading} className="group flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#efbf54] to-[#d58c18] text-sm font-extrabold text-[#14232b] shadow-[0_12px_28px_rgba(190,119,16,.25)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_34px_rgba(190,119,16,.32)] disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-65">
-                  {loading ? 'Authenticating…' : 'Enter admin panel'}
+                <div className="flex items-center justify-between gap-3 text-[11px]">
+                  <span className="flex items-center gap-2 text-[#9fb0b6]"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> Encrypted session</span>
+                  <button type="button" onClick={() => setHelpVisible((visible) => !visible)} className="min-h-11 text-[#d8b866] transition hover:text-[#f1d28b]">Forgot password?</button>
+                </div>
+
+                <button type="submit" disabled={loading} aria-busy={loading} className="group flex h-12 w-full items-center justify-center gap-2 rounded-full border border-[#edbd59]/45 bg-[linear-gradient(90deg,#b77a1d,#e1a12c)] px-4 text-xs font-extrabold uppercase tracking-[.16em] text-[#091923] shadow-[0_14px_30px_rgba(0,0,0,.35)] transition hover:-translate-y-0.5 hover:brightness-110 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-65">
+                  {loading ? 'Authenticating…' : 'Login'}
                   {!loading && <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />}
                 </button>
               </form>
 
-              <div className="mt-6 border-t border-[#e7e3da] pt-5">
+              <div className="mt-6 border-t border-white/10 pt-5">
                 <div className="mb-3 flex items-center justify-between">
-                  <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[.1em] text-[#63737b]"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> Demo access</span>
-                  <span className="text-[10px] text-[#8b969b]">Select a role</span>
+                  <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[.12em] text-[#b9c6ca]"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> Demo access</span>
+                  <span className="text-[11px] text-[#82949b]">Select a role</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   {DEMO_USERS.map((demo) => {
                     const isSelected = username === demo.username;
                     return (
-                      <button key={demo.username} type="button" onClick={() => selectDemoUser(demo.username, demo.password)} className={`rounded-xl border px-3 py-2.5 text-left transition ${isSelected ? 'border-[#dba033] bg-[#fff4d8] shadow-[inset_0_0_0_1px_rgba(219,160,51,.15)]' : 'border-[#e4e7e5] bg-white hover:border-[#d9b66e] hover:bg-[#fffcf6]'}`}>
-                        <span className="block text-xs font-bold text-[#1d333e]">{demo.label}</span>
-                        <span className="mt-0.5 block text-[10px] text-[#7d8a90]">{demo.username}</span>
+                      <button key={demo.username} type="button" aria-pressed={isSelected} onClick={() => selectDemoUser(demo.username, demo.password)} className={`min-h-14 rounded-xl border px-3 py-2.5 text-left transition ${isSelected ? 'border-[#dfad48] bg-[#dba33a]/15 shadow-[inset_0_0_0_1px_rgba(223,173,72,.15)]' : 'border-white/10 bg-white/[.035] hover:border-[#d1a34d]/50 hover:bg-white/[.065]'}`}>
+                        <span className="block text-xs font-bold text-[#f5ecdd]">{demo.label}</span>
+                        <span className="mt-0.5 block text-[11px] text-[#91a2a9]">{demo.username}</span>
                       </button>
                     );
                   })}
@@ -122,7 +136,7 @@ export const LoginPage: React.FC = () => {
           </section>
         </div>
 
-        <footer className="flex flex-col gap-2 text-[10px] font-medium tracking-wide text-white/55 sm:flex-row sm:items-center sm:justify-between">
+        <footer className="flex flex-col gap-2 text-[11px] font-medium tracking-wide text-white/65 sm:flex-row sm:items-center sm:justify-between">
           <span>© 2026 HotelOS · Grand Residence Dhaka</span>
           <span>Encrypted access · Live operations · 24/7 availability</span>
         </footer>

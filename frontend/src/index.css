@@ -42,6 +42,30 @@ body {
   min-height: 100vh;
 }
 
+html,
+body,
+#root {
+  width: 100%;
+  min-width: 0;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+:focus-visible {
+  outline: 3px solid rgba(182, 138, 53, 0.5);
+  outline-offset: 2px;
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
@@ -105,8 +129,49 @@ body {
   color-scheme: light;
 }
 
+.admin-shell {
+  overflow-x: clip;
+}
+
+@media (max-width: 1023px) {
+  .admin-shell aside a {
+    min-height: 44px;
+  }
+
+  .admin-shell header button,
+  .admin-shell header input {
+    min-height: 44px;
+  }
+
+  .admin-shell input,
+  .admin-shell select,
+  .admin-shell textarea {
+    font-size: 16px;
+  }
+
+  .admin-shell main button,
+  .admin-shell main a {
+    min-height: 44px;
+  }
+
+  .admin-shell [role="dialog"] .grid-cols-2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 @media (max-width: 640px) {
   .admin-shell table {
     min-width: 720px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

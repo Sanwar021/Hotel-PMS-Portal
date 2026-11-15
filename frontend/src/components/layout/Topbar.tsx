@@ -152,6 +152,8 @@ export const Topbar: React.FC<TopbarProps> = ({
         <div className="relative">
           <button
             onClick={() => setShowNotifs(!showNotifs)}
+            aria-label={`Notifications${unreadCount ? `, ${unreadCount} unread` : ''}`}
+            aria-expanded={showNotifs}
             className="relative rounded-lg border border-hotel-line bg-white p-2 text-hotel-muted hover:bg-[#f4f6f2] hover:text-hotel-text transition-colors"
           >
             <Bell className="h-4 w-4" />
