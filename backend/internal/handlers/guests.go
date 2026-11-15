@@ -159,4 +159,3 @@ func UpdateGuest(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"guest": guest})
 }
-

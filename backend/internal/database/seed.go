@@ -285,7 +285,7 @@ func SeedDatabase(db *gorm.DB) error {
 		for r := 1; r <= 10; r++ {
 			roomNum := fmt.Sprintf("%d%02d", floorNum, r)
 			status := roomStatuses[(fIdx*10+r-1)%len(roomStatuses)]
-			
+
 			// Distribute room types realistically
 			var assignedType models.RoomType
 			if floorNum == 4 && (r == 9 || r == 10) {
@@ -321,9 +321,9 @@ func SeedDatabase(db *gorm.DB) error {
 	// 8. 30 REALISTIC GUESTS / CRM PROFILES
 	guestData := []struct {
 		First, Last, Email, Phone, Nat, IDType, IDNum, Company, Notes string
-		VIP                                                             models.VIPStatus
-		Points, Stays                                                   int
-		Spent                                                           float64
+		VIP                                                           models.VIPStatus
+		Points, Stays                                                 int
+		Spent                                                         float64
 	}{
 		{"Rahim", "Chowdhury", "rahim.chowdhury@apextech.com", "+880 1711 234567", "Bangladeshi", "National ID", "1985269123456", "Apex Technologies Ltd", "Prefers high floor room facing Gulshan Lake. Decaf coffee in room.", models.VIPPlatinum, 4500, 12, 185000},
 		{"Samantha", "Hayes", "s.hayes@unicef.org", "+1 202 555 0192", "American", "Passport", "P58291048", "UNICEF Bangladesh Mission", "Frequent mission lead. Extra pillows requested.", models.VIPGold, 2800, 7, 98000},
@@ -450,7 +450,7 @@ func SeedDatabase(db *gorm.DB) error {
 		g := allGuests[spec.GuestIdx]
 		rt := roomTypes[spec.RoomTypeIdx]
 		rp := ratePlans[spec.RatePlanIdx]
-		
+
 		var assignedRoomID *uuid.UUID
 		if spec.Status != models.ResCancelled {
 			assignedRoomID = &allRooms[spec.RoomIdx].ID
@@ -779,4 +779,3 @@ func SeedDatabase(db *gorm.DB) error {
 	log.Println("✓ Database seeding completed successfully with 40 rooms, 30 guests, 25 reservations, folios, restaurant items, inventory, and staff!")
 	return nil
 }
-

@@ -8,6 +8,7 @@ import (
 	"hotelos/backend/internal/database"
 	"hotelos/backend/internal/handlers"
 	"hotelos/backend/internal/middleware"
+	"hotelos/backend/internal/models"
 	"hotelos/backend/internal/websocket"
 
 	"github.com/gin-gonic/gin"
@@ -15,6 +16,9 @@ import (
 
 func main() {
 	cfg := config.LoadConfig()
+	if err := cfg.ValidateProduction(); err != nil {
+		log.Fatalf("Unsafe production configuration: %v", err)
+	}
 
 	// 1. Connect to PostgreSQL
 	db, err := database.ConnectDB(cfg)
@@ -28,16 +32,20 @@ func main() {
 	}
 
 	// 3. Seed Database with HotelOS Grand Residence data
-	if err := database.SeedDatabase(db); err != nil {
-		log.Fatalf("Database seeding failed: %v", err)
+	if cfg.SeedDemoData {
+		if err := database.SeedDatabase(db); err != nil {
+			log.Fatalf("Database seeding failed: %v", err)
+		}
+	} else if err := database.BootstrapProduction(db, cfg); err != nil {
+		log.Fatalf("Production bootstrap failed: %v", err)
 	}
 
 	// 4. Initialize WebSocket Hub
-	wsHub := websocket.InitHub()
+	wsHub := websocket.InitHub(cfg)
 
 	// 5. Setup Gin Router
 	router := gin.Default()
-	router.Use(middleware.CORSMiddleware())
+	router.Use(middleware.CORSMiddleware(cfg.CORSOrigin))
 
 	// Health Check
 	router.GET("/health", func(c *gin.Context) {
@@ -50,7 +58,7 @@ func main() {
 
 	// WebSocket Endpoint
 	router.GET("/ws", func(c *gin.Context) {
-		websocket.ServeWS(wsHub, c)
+		websocket.ServeWS(wsHub, cfg.JWTSecret, cfg.CORSOrigin, c)
 	})
 
 	// API v1
@@ -65,66 +73,69 @@ func main() {
 		// Authenticated Routes
 		api := v1.Group("")
 		api.Use(middleware.AuthMiddleware(cfg.JWTSecret))
+		api.Use(middleware.AuditMutations())
 		{
 			api.GET("/auth/me", handlers.GetMeHandler)
+			api.POST("/auth/change-password", handlers.ChangePassword)
 
 			// Dashboard
 			api.GET("/dashboard/stats", handlers.GetDashboardStats)
 
 			// Rooms & Properties
 			api.GET("/rooms", handlers.GetRooms)
-			api.POST("/rooms", handlers.CreateRoom)
-			api.PATCH("/rooms/:id/status", handlers.UpdateRoomStatus)
+			api.POST("/rooms", middleware.RequireRole(models.RoleSuperAdmin, models.RoleHotelOwner, models.RoleGeneralManager, models.RoleHotelManager), handlers.CreateRoom)
+			api.PATCH("/rooms/:id/status", middleware.RequireRole(models.RoleSuperAdmin, models.RoleHotelManager, models.RoleReceptionist, models.RoleHousekeepingStaff, models.RoleMaintenanceStaff), handlers.UpdateRoomStatus)
 			api.GET("/room-types", handlers.GetRoomTypes)
 			api.GET("/floors", handlers.GetFloors)
 
 			// Reservations & Calendar
 			api.GET("/reservations", handlers.GetReservations)
-			api.POST("/reservations", handlers.CreateReservation)
+			api.POST("/reservations", middleware.RequireRole(models.RoleSuperAdmin, models.RoleHotelManager, models.RoleReceptionist), handlers.CreateReservation)
 			api.GET("/reservations/:id", handlers.GetReservationByID)
-			api.POST("/reservations/:id/cancel", handlers.CancelReservation)
+			api.POST("/reservations/:id/cancel", middleware.RequireRole(models.RoleSuperAdmin, models.RoleHotelManager, models.RoleReceptionist), handlers.CancelReservation)
 			api.GET("/reservations/calendar", handlers.GetCalendarTimeline)
 
 			// Front Desk Operations
 			api.GET("/frontdesk/arrivals", handlers.GetArrivals)
 			api.GET("/frontdesk/departures", handlers.GetDepartures)
 			api.GET("/frontdesk/in-house", handlers.GetInHouseGuests)
-			api.POST("/frontdesk/check-in", handlers.CheckInGuest)
-			api.POST("/frontdesk/check-out", handlers.CheckOutGuest)
-			api.POST("/frontdesk/transfer-room", handlers.TransferRoom)
+			api.POST("/frontdesk/check-in", middleware.RequireRole(models.RoleSuperAdmin, models.RoleHotelManager, models.RoleReceptionist), handlers.CheckInGuest)
+			api.POST("/frontdesk/check-out", middleware.RequireRole(models.RoleSuperAdmin, models.RoleHotelManager, models.RoleReceptionist, models.RoleAccountant), handlers.CheckOutGuest)
+			api.POST("/frontdesk/transfer-room", middleware.RequireRole(models.RoleSuperAdmin, models.RoleHotelManager, models.RoleReceptionist), handlers.TransferRoom)
 
 			// Guests CRM
-			api.GET("/guests", handlers.GetGuests)
-			api.GET("/guests/:id", handlers.GetGuestByID)
-			api.POST("/guests", handlers.CreateGuest)
-			api.PUT("/guests/:id", handlers.UpdateGuest)
+			api.GET("/guests", middleware.RequireRole(models.RoleSuperAdmin, models.RoleHotelManager, models.RoleReceptionist, models.RoleAccountant), handlers.GetGuests)
+			api.GET("/guests/:id", middleware.RequireRole(models.RoleSuperAdmin, models.RoleHotelManager, models.RoleReceptionist, models.RoleAccountant), handlers.GetGuestByID)
+			api.POST("/guests", middleware.RequireRole(models.RoleSuperAdmin, models.RoleHotelManager, models.RoleReceptionist), handlers.CreateGuest)
+			api.PUT("/guests/:id", middleware.RequireRole(models.RoleSuperAdmin, models.RoleHotelManager, models.RoleReceptionist), handlers.UpdateGuest)
 
 			// Housekeeping
 			api.GET("/housekeeping/tasks", handlers.GetHousekeepingTasks)
-			api.POST("/housekeeping/tasks", handlers.CreateHousekeepingTask)
-			api.PATCH("/housekeeping/tasks/:id/status", handlers.UpdateHousekeepingStatus)
+			api.POST("/housekeeping/tasks", middleware.RequireRole(models.RoleSuperAdmin, models.RoleHotelManager, models.RoleReceptionist, models.RoleHousekeepingStaff), handlers.CreateHousekeepingTask)
+			api.PATCH("/housekeeping/tasks/:id/status", middleware.RequireRole(models.RoleSuperAdmin, models.RoleHotelManager, models.RoleHousekeepingStaff), handlers.UpdateHousekeepingStatus)
 
 			// Restaurant & POS
 			api.GET("/restaurant/tables", handlers.GetRestaurantTables)
 			api.GET("/restaurant/menu", handlers.GetRestaurantMenu)
 			api.GET("/restaurant/orders", handlers.GetRestaurantOrders)
-			api.POST("/restaurant/orders", handlers.CreateRestaurantOrder)
-			api.POST("/restaurant/orders/:id/charge-to-room", handlers.ChargeOrderToRoom)
+			api.POST("/restaurant/orders", middleware.RequireRole(models.RoleSuperAdmin, models.RoleHotelManager, models.RoleRestaurantManager, models.RoleRestaurantStaff), handlers.CreateRestaurantOrder)
+			api.POST("/restaurant/orders/:id/charge-to-room", middleware.RequireRole(models.RoleSuperAdmin, models.RoleHotelManager, models.RoleRestaurantManager, models.RoleRestaurantStaff), handlers.ChargeOrderToRoom)
 
 			// Billing, Folios & Payments
-			api.GET("/billing/folios/:id", handlers.GetFolioByID)
-			api.POST("/billing/folios/:id/charge", handlers.AddFolioCharge)
-			api.POST("/billing/payments", handlers.RecordPayment)
-			api.GET("/billing/invoices", handlers.GetInvoices)
-			api.GET("/billing/invoices/:id", handlers.GetInvoiceByID)
+			api.GET("/billing/folios/:id", middleware.RequireRole(models.RoleSuperAdmin, models.RoleHotelManager, models.RoleReceptionist, models.RoleAccountant), handlers.GetFolioByID)
+			api.POST("/billing/folios/:id/charge", middleware.RequireRole(models.RoleSuperAdmin, models.RoleHotelManager, models.RoleReceptionist, models.RoleAccountant), handlers.AddFolioCharge)
+			api.POST("/billing/payments", middleware.RequireRole(models.RoleSuperAdmin, models.RoleHotelManager, models.RoleReceptionist, models.RoleAccountant), handlers.RecordPayment)
+			api.POST("/billing/payments/:id/refund", middleware.RequireRole(models.RoleSuperAdmin, models.RoleHotelManager, models.RoleAccountant), handlers.RefundPayment)
+			api.GET("/billing/invoices", middleware.RequireRole(models.RoleSuperAdmin, models.RoleHotelManager, models.RoleReceptionist, models.RoleAccountant), handlers.GetInvoices)
+			api.GET("/billing/invoices/:id", middleware.RequireRole(models.RoleSuperAdmin, models.RoleHotelManager, models.RoleReceptionist, models.RoleAccountant), handlers.GetInvoiceByID)
 
 			// Inventory & Procurement
-			api.GET("/inventory/items", handlers.GetInventoryItems)
-			api.POST("/inventory/adjust", handlers.AdjustInventoryStock)
-			api.GET("/procurement/suppliers", handlers.GetSuppliers)
-			api.GET("/procurement/orders", handlers.GetPurchaseOrders)
-			api.POST("/procurement/orders", handlers.CreatePurchaseOrder)
-			api.PATCH("/procurement/orders/:id/approve", handlers.ApprovePurchaseOrder)
+			api.GET("/inventory/items", middleware.RequireRole(models.RoleSuperAdmin, models.RoleHotelManager, models.RoleInventoryManager, models.RoleRestaurantManager, models.RoleHousekeepingStaff), handlers.GetInventoryItems)
+			api.POST("/inventory/adjust", middleware.RequireRole(models.RoleSuperAdmin, models.RoleHotelManager, models.RoleInventoryManager), handlers.AdjustInventoryStock)
+			api.GET("/procurement/suppliers", middleware.RequireRole(models.RoleSuperAdmin, models.RoleHotelManager, models.RoleInventoryManager), handlers.GetSuppliers)
+			api.GET("/procurement/orders", middleware.RequireRole(models.RoleSuperAdmin, models.RoleHotelManager, models.RoleInventoryManager), handlers.GetPurchaseOrders)
+			api.POST("/procurement/orders", middleware.RequireRole(models.RoleSuperAdmin, models.RoleHotelManager, models.RoleInventoryManager), handlers.CreatePurchaseOrder)
+			api.PATCH("/procurement/orders/:id/approve", middleware.RequireRole(models.RoleSuperAdmin, models.RoleHotelManager), handlers.ApprovePurchaseOrder)
 
 			// Maintenance
 			api.GET("/maintenance", handlers.GetMaintenanceRequests)
@@ -132,16 +143,16 @@ func main() {
 			api.PATCH("/maintenance/:id/status", handlers.UpdateMaintenanceStatus)
 
 			// Employees & HR
-			api.GET("/employees", handlers.GetEmployees)
-			api.GET("/employees/shifts", handlers.GetShifts)
+			api.GET("/employees", middleware.RequireRole(models.RoleSuperAdmin, models.RoleHotelOwner, models.RoleGeneralManager, models.RoleHotelManager), handlers.GetEmployees)
+			api.GET("/employees/shifts", middleware.RequireRole(models.RoleSuperAdmin, models.RoleHotelOwner, models.RoleGeneralManager, models.RoleHotelManager), handlers.GetShifts)
 
 			// Reports & Analytics
-			api.GET("/reports/daily-business", handlers.GetDailyBusinessReport)
+			api.GET("/reports/daily-business", middleware.RequireRole(models.RoleSuperAdmin, models.RoleHotelOwner, models.RoleGeneralManager, models.RoleHotelManager, models.RoleAccountant), handlers.GetDailyBusinessReport)
 
 			// Settings, Audit & Notifications
 			api.GET("/settings/hotel", handlers.GetHotelSettings)
-			api.PUT("/settings/hotel", handlers.UpdateHotelSettings)
-			api.GET("/settings/audit-logs", handlers.GetAuditLogs)
+			api.PUT("/settings/hotel", middleware.RequireRole(models.RoleSuperAdmin, models.RoleHotelOwner, models.RoleGeneralManager), handlers.UpdateHotelSettings)
+			api.GET("/settings/audit-logs", middleware.RequireRole(models.RoleSuperAdmin, models.RoleHotelOwner, models.RoleGeneralManager, models.RoleHotelManager), handlers.GetAuditLogs)
 			api.GET("/notifications", handlers.GetNotifications)
 			api.PATCH("/notifications/:id/read", handlers.MarkNotificationAsRead)
 		}
@@ -152,4 +163,3 @@ func main() {
 		log.Fatalf("Server startup failed: %v", err)
 	}
 }
-

@@ -23,13 +23,16 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   useEffect(() => {
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = import.meta.env.VITE_WS_URL || `${wsProtocol}//${window.location.host}/ws`;
+    const wsBaseUrl = import.meta.env.VITE_WS_URL || `${wsProtocol}//${window.location.host}/ws`;
     let socket: WebSocket | null = null;
     let reconnectTimeout: any = null;
 
     const connect = () => {
       try {
-        socket = new WebSocket(wsUrl);
+        const token = localStorage.getItem('hotelos_token');
+        if (!token) return;
+        const separator = wsBaseUrl.includes('?') ? '&' : '?';
+        socket = new WebSocket(`${wsBaseUrl}${separator}token=${encodeURIComponent(token)}`);
 
         socket.onopen = () => {
           setIsConnected(true);

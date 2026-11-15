@@ -69,10 +69,20 @@ func CreateRestaurantOrder(c *gin.Context) {
 	var orderItems []models.RestaurantOrderItem
 
 	for _, itemReq := range req.Items {
+		if itemReq.Quantity <= 0 {
+			tx.Rollback()
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Restaurant item quantity must be greater than zero"})
+			return
+		}
 		var menuItem models.MenuItem
 		if err := tx.First(&menuItem, "id = ?", itemReq.MenuItemID).Error; err != nil {
 			tx.Rollback()
 			c.JSON(http.StatusNotFound, gin.H{"error": "Menu item not found"})
+			return
+		}
+		if !menuItem.IsAvailable {
+			tx.Rollback()
+			c.JSON(http.StatusConflict, gin.H{"error": fmt.Sprintf("Menu item %s is unavailable", menuItem.Name)})
 			return
 		}
 
@@ -87,6 +97,16 @@ func CreateRestaurantOrder(c *gin.Context) {
 			TotalPrice: lineTotal,
 			Notes:      itemReq.Notes,
 		})
+	}
+	if req.OrderType == models.OrderDineIn && req.TableID == nil {
+		tx.Rollback()
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Dine-in orders require a table"})
+		return
+	}
+	if req.OrderType == models.OrderRoomService && req.RoomID == nil {
+		tx.Rollback()
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Room-service orders require a room"})
+		return
 	}
 
 	tax := subtotal * 0.10 // 10% F&B VAT
@@ -197,6 +217,11 @@ func ChargeOrderToRoom(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "No active open folio found for this room. Ensure the guest is checked in."})
 		return
 	}
+	if folio.Reservation == nil || folio.Reservation.Status != models.ResCheckedIn {
+		tx.Rollback()
+		c.JSON(http.StatusConflict, gin.H{"error": "Room charge requires an in-house checked-in guest"})
+		return
+	}
 
 	// Update Folio with Restaurant Charge
 	folio.TotalCharges += order.Total
@@ -235,4 +260,3 @@ func ChargeOrderToRoom(c *gin.Context) {
 		"folio": folio,
 	})
 }
-

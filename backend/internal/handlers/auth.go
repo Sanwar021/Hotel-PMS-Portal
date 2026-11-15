@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"time"
 
 	"hotelos/backend/internal/config"
 	"hotelos/backend/internal/database"
@@ -40,11 +41,26 @@ func LoginHandler(cfg *config.Config) gin.HandlerFunc {
 			c.JSON(http.StatusForbidden, gin.H{"error": "Account is disabled. Contact system administrator."})
 			return
 		}
+		if user.LockedUntil != nil && user.LockedUntil.After(time.Now()) {
+			c.JSON(http.StatusLocked, gin.H{"error": "Account is temporarily locked after repeated failed sign-in attempts"})
+			return
+		}
 
 		if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
+			user.FailedLoginAttempts++
+			if user.FailedLoginAttempts >= 5 {
+				lockedUntil := time.Now().Add(15 * time.Minute)
+				user.LockedUntil = &lockedUntil
+			}
+			database.DB.Model(&user).Updates(map[string]interface{}{"failed_login_attempts": user.FailedLoginAttempts, "locked_until": user.LockedUntil})
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
 			return
 		}
+		now := time.Now()
+		user.FailedLoginAttempts = 0
+		user.LockedUntil = nil
+		user.LastLoginAt = &now
+		database.DB.Model(&user).Updates(map[string]interface{}{"failed_login_attempts": 0, "locked_until": nil, "last_login_at": now})
 
 		token, err := middleware.GenerateToken(&user, cfg.JWTSecret, cfg.JWTExpiresIn)
 		if err != nil {
@@ -57,6 +73,42 @@ func LoginHandler(cfg *config.Config) gin.HandlerFunc {
 			User:  user,
 		})
 	}
+}
+
+func ChangePassword(c *gin.Context) {
+	var req struct {
+		CurrentPassword string `json:"current_password" binding:"required"`
+		NewPassword     string `json:"new_password" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil || len(req.NewPassword) < 12 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Current password and a new password of at least 12 characters are required"})
+		return
+	}
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	var user models.User
+	if err := database.DB.First(&user, "id = ?", userID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+	if bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.CurrentPassword)) != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Current password is incorrect"})
+		return
+	}
+	hash, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to secure new password"})
+		return
+	}
+	now := time.Now()
+	if err := database.DB.Model(&user).Updates(map[string]interface{}{"password_hash": string(hash), "password_changed_at": now}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update password"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Password changed. Sign in again with the new password."})
 }
 
 func GetMeHandler(c *gin.Context) {
@@ -75,4 +127,3 @@ func GetMeHandler(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"user": user})
 }
-

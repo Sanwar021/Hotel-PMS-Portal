@@ -1,13 +1,22 @@
 package websocket
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"sync"
+	"time"
+
+	"hotelos/backend/internal/config"
+	"hotelos/backend/internal/database"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/websocket"
+	"github.com/jackc/pgx/v5"
 )
 
 var upgrader = websocket.Upgrader{
@@ -39,7 +48,7 @@ type Client struct {
 
 var GlobalHub *Hub
 
-func InitHub() *Hub {
+func InitHub(cfg *config.Config) *Hub {
 	GlobalHub = &Hub{
 		clients:    make(map[*Client]bool),
 		broadcast:  make(chan Message, 256),
@@ -47,7 +56,37 @@ func InitHub() *Hub {
 		unregister: make(chan *Client),
 	}
 	go GlobalHub.run()
+	go listenForDatabaseEvents(cfg, GlobalHub)
 	return GlobalHub
+}
+
+func listenForDatabaseEvents(cfg *config.Config, hub *Hub) {
+	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s", cfg.DBHost, cfg.DBPort, cfg.DBUser, cfg.DBPassword, cfg.DBName, cfg.DBSSLMode)
+	for {
+		conn, err := pgx.Connect(context.Background(), dsn)
+		if err != nil {
+			log.Printf("Realtime database listener unavailable: %v", err)
+			time.Sleep(5 * time.Second)
+			continue
+		}
+		if _, err = conn.Exec(context.Background(), "LISTEN hotelos_events"); err != nil {
+			conn.Close(context.Background())
+			time.Sleep(5 * time.Second)
+			continue
+		}
+		for {
+			notification, waitErr := conn.WaitForNotification(context.Background())
+			if waitErr != nil {
+				break
+			}
+			var message Message
+			if json.Unmarshal([]byte(notification.Payload), &message) == nil {
+				hub.broadcast <- message
+			}
+		}
+		conn.Close(context.Background())
+		time.Sleep(time.Second)
+	}
 }
 
 func (h *Hub) run() {
@@ -74,7 +113,7 @@ func (h *Hub) run() {
 				continue
 			}
 
-			h.mu.RLock()
+			h.mu.Lock()
 			for client := range h.clients {
 				select {
 				case client.send <- data:
@@ -83,21 +122,48 @@ func (h *Hub) run() {
 					delete(h.clients, client)
 				}
 			}
-			h.mu.RUnlock()
+			h.mu.Unlock()
 		}
 	}
 }
 
 func BroadcastEvent(eventType string, payload interface{}) {
 	if GlobalHub != nil {
-		GlobalHub.broadcast <- Message{
+		message := Message{
 			Type:    eventType,
 			Payload: payload,
 		}
+		if data, err := json.Marshal(message); err == nil && database.DB != nil {
+			if result := database.DB.Exec("SELECT pg_notify('hotelos_events', ?)", string(data)); result.Error == nil {
+				return
+			}
+		}
+		GlobalHub.broadcast <- message
 	}
 }
 
-func ServeWS(hub *Hub, c *gin.Context) {
+func ServeWS(hub *Hub, jwtSecret, allowedOrigin string, c *gin.Context) {
+	tokenString := c.Query("token")
+	if tokenString == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "WebSocket authentication required"})
+		return
+	}
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, http.ErrNotSupported
+		}
+		return []byte(jwtSecret), nil
+	})
+	if err != nil || !token.Valid {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired WebSocket token"})
+		return
+	}
+	origin := c.GetHeader("Origin")
+	if origin != "" && allowedOrigin != "*" && !strings.EqualFold(strings.TrimRight(origin, "/"), strings.TrimRight(allowedOrigin, "/")) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "WebSocket origin is not allowed"})
+		return
+	}
+	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		log.Println("Failed to upgrade websocket:", err)
@@ -133,4 +199,3 @@ func ServeWS(hub *Hub, c *gin.Context) {
 		}
 	}()
 }
-

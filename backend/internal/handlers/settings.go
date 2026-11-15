@@ -118,4 +118,3 @@ func MarkNotificationAsRead(c *gin.Context) {
 	database.DB.Model(&models.Notification{}).Where("id = ?", notifID).Update("is_read", true)
 	c.JSON(http.StatusOK, gin.H{"success": true})
 }
-

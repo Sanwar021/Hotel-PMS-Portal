@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"hotelos/backend/internal/database"
 	"hotelos/backend/internal/models"
 
 	"github.com/gin-gonic/gin"
@@ -79,10 +80,21 @@ func AuthMiddleware(secret string) gin.HandlerFunc {
 			c.Abort()
 			return
 		}
+		var user models.User
+		if err := database.DB.First(&user, "id = ?", claims.UserID).Error; err != nil || !user.IsActive {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "User session is no longer active"})
+			c.Abort()
+			return
+		}
+		if user.PasswordChangedAt != nil && claims.IssuedAt != nil && user.PasswordChangedAt.After(claims.IssuedAt.Time) {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Session expired after password change"})
+			c.Abort()
+			return
+		}
 
 		c.Set("claims", claims)
 		c.Set("user_id", claims.UserID)
-		c.Set("user_role", claims.Role)
+		c.Set("user_role", user.Role)
 		c.Next()
 	}
 }
@@ -115,10 +127,37 @@ func RequireRole(allowedRoles ...models.UserRole) gin.HandlerFunc {
 	}
 }
 
-func CORSMiddleware() gin.HandlerFunc {
+func AuditMutations() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+		c.Next()
+		if c.Request.Method == http.MethodGet || c.Request.Method == http.MethodOptions || c.Writer.Status() >= 400 {
+			return
+		}
+		var userID *uuid.UUID
+		if value, ok := c.Get("user_id"); ok {
+			if id, ok := value.(uuid.UUID); ok {
+				userID = &id
+			}
+		}
+		_ = database.DB.Create(&models.AuditLog{
+			UserID: userID, Action: strings.ToLower(c.Request.Method), EntityType: c.FullPath(),
+			EntityID: c.Param("id"), Details: "HTTP " + c.Request.Method + " completed", IPAddress: c.ClientIP(),
+		}).Error
+	}
+}
+
+func CORSMiddleware(allowedOrigin ...string) gin.HandlerFunc {
+	origin := "http://localhost:5173"
+	if len(allowedOrigin) > 0 && allowedOrigin[0] != "" {
+		origin = allowedOrigin[0]
+	}
+	return func(c *gin.Context) {
+		requestOrigin := c.GetHeader("Origin")
+		if requestOrigin == origin || (origin == "*" && requestOrigin != "") {
+			c.Writer.Header().Set("Access-Control-Allow-Origin", requestOrigin)
+			c.Writer.Header().Set("Vary", "Origin")
+		}
+		c.Writer.Header().Set("Access-Control-Allow-Credentials", "false")
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE, PATCH")
 
@@ -130,4 +169,3 @@ func CORSMiddleware() gin.HandlerFunc {
 		c.Next()
 	}
 }
-

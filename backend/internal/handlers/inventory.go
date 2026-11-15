@@ -46,6 +46,15 @@ func AdjustInventoryStock(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	if req.Quantity < 0 || (req.Quantity == 0 && req.Type != models.MovementAdjustment) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Stock quantity must be positive; adjustment may set stock to zero"})
+		return
+	}
+	validMovement := req.Type == models.MovementConsumed || req.Type == models.MovementDamaged || req.Type == models.MovementReceived || req.Type == models.MovementAdjustment
+	if !validMovement {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Unsupported inventory movement type"})
+		return
+	}
 
 	tx := database.DB.Begin()
 	defer func() {
@@ -133,6 +142,10 @@ func CreatePurchaseOrder(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	if len(req.Items) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Purchase order requires at least one item"})
+		return
+	}
 
 	tx := database.DB.Begin()
 	defer func() {
@@ -145,6 +158,11 @@ func CreatePurchaseOrder(c *gin.Context) {
 	var poItems []models.PurchaseOrderItem
 
 	for _, itm := range req.Items {
+		if itm.Quantity <= 0 || itm.UnitPrice <= 0 {
+			tx.Rollback()
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Purchase-order quantities and prices must be greater than zero"})
+			return
+		}
 		lineTotal := itm.UnitPrice * float64(itm.Quantity)
 		totalAmount += lineTotal
 		poItems = append(poItems, models.PurchaseOrderItem{
@@ -153,6 +171,12 @@ func CreatePurchaseOrder(c *gin.Context) {
 			UnitPrice:  itm.UnitPrice,
 			TotalPrice: lineTotal,
 		})
+	}
+	var supplier models.Supplier
+	if err := tx.First(&supplier, "id = ?", req.SupplierID).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Supplier not found"})
+		return
 	}
 
 	var count int64
@@ -196,6 +220,10 @@ func ApprovePurchaseOrder(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Purchase order not found"})
 		return
 	}
+	if po.Status != models.PODraft && po.Status != models.POPendingApproval {
+		c.JSON(http.StatusConflict, gin.H{"error": "Only draft or pending purchase orders can be approved"})
+		return
+	}
 
 	po.Status = models.POApproved
 	database.DB.Save(&po)
@@ -205,4 +233,3 @@ func ApprovePurchaseOrder(c *gin.Context) {
 		"purchase_order": po,
 	})
 }
-

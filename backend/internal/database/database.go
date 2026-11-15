@@ -44,6 +44,13 @@ func ConnectDB(cfg *config.Config) (*gorm.DB, error) {
 
 func MigrateDB(db *gorm.DB) error {
 	log.Println("Running database migrations...")
+	if err := db.Exec("SELECT pg_advisory_lock(hashtext('hotelos_schema_migration'))").Error; err != nil {
+		return err
+	}
+	defer db.Exec("SELECT pg_advisory_unlock(hashtext('hotelos_schema_migration'))")
+	if err := db.Exec("CREATE EXTENSION IF NOT EXISTS btree_gist").Error; err != nil {
+		return err
+	}
 	err := db.AutoMigrate(
 		&models.Hotel{},
 		&models.Property{},
@@ -78,7 +85,20 @@ func MigrateDB(db *gorm.DB) error {
 	if err != nil {
 		return fmt.Errorf("failed to auto-migrate database: %w", err)
 	}
+	statements := []string{
+		"CREATE UNIQUE INDEX IF NOT EXISTS idx_rooms_property_number ON rooms(property_id, room_number) WHERE deleted_at IS NULL",
+		"CREATE UNIQUE INDEX IF NOT EXISTS idx_folios_reservation ON guest_folios(reservation_id) WHERE deleted_at IS NULL",
+		"CREATE UNIQUE INDEX IF NOT EXISTS idx_payments_transaction_ref ON payments(transaction_ref) WHERE deleted_at IS NULL AND transaction_ref <> '' AND status = 'completed'",
+		"DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'reservation_dates_valid') THEN ALTER TABLE reservations ADD CONSTRAINT reservation_dates_valid CHECK (check_out_date > check_in_date); END IF; END $$",
+		"DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'reservation_occupancy_valid') THEN ALTER TABLE reservations ADD CONSTRAINT reservation_occupancy_valid CHECK (adults >= 1 AND children >= 0); END IF; END $$",
+		"DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'folio_totals_valid') THEN ALTER TABLE guest_folios ADD CONSTRAINT folio_totals_valid CHECK (total_charges >= 0 AND total_payments >= 0 AND balance >= 0); END IF; END $$",
+		"DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'prevent_room_overlap') THEN ALTER TABLE reservations ADD CONSTRAINT prevent_room_overlap EXCLUDE USING gist (room_id WITH =, daterange(check_in_date, check_out_date, '[)') WITH &&) WHERE (deleted_at IS NULL AND room_id IS NOT NULL AND status IN ('confirmed','checked_in')); END IF; END $$",
+	}
+	for _, statement := range statements {
+		if err := db.Exec(statement).Error; err != nil {
+			return fmt.Errorf("database invariant migration failed: %w", err)
+		}
+	}
 	log.Println("✓ Database migrations completed successfully")
 	return nil
 }
-

@@ -68,6 +68,15 @@ func CreateRoom(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	var property models.Property
+	var floor models.Floor
+	var roomType models.RoomType
+	if database.DB.First(&property, "id = ?", req.PropertyID).Error != nil ||
+		database.DB.First(&floor, "id = ? AND property_id = ?", req.FloorID, req.PropertyID).Error != nil ||
+		database.DB.First(&roomType, "id = ? AND property_id = ?", req.RoomTypeID, req.PropertyID).Error != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Property, floor and room type must exist and belong together"})
+		return
+	}
 
 	// Check if room number already exists
 	var count int64
@@ -118,10 +127,22 @@ func UpdateRoomStatus(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Status is required"})
 		return
 	}
+	if !validRoomStatus(req.Status) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Unsupported room status"})
+		return
+	}
 
 	var room models.Room
 	if err := database.DB.First(&room, "id = ?", roomID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Room not found"})
+		return
+	}
+	if room.Status == models.RoomStatusOccupied && req.Status != models.RoomStatusDirty {
+		c.JSON(http.StatusConflict, gin.H{"error": "Occupied rooms can only be released through checkout or transfer"})
+		return
+	}
+	if req.Status == models.RoomStatusOccupied || req.Status == models.RoomStatusReserved {
+		c.JSON(http.StatusConflict, gin.H{"error": "Occupied and reserved states are controlled by front-desk workflows"})
 		return
 	}
 
@@ -141,3 +162,11 @@ func UpdateRoomStatus(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"room": room})
 }
 
+func validRoomStatus(status models.RoomStatus) bool {
+	switch status {
+	case models.RoomStatusAvailable, models.RoomStatusReserved, models.RoomStatusOccupied, models.RoomStatusDirty, models.RoomStatusCleaning, models.RoomStatusInspected, models.RoomStatusMaintenance, models.RoomStatusOutOfOrder:
+		return true
+	default:
+		return false
+	}
+}

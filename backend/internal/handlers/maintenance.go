@@ -163,4 +163,3 @@ func UpdateMaintenanceStatus(c *gin.Context) {
 		"request": maint,
 	})
 }
-

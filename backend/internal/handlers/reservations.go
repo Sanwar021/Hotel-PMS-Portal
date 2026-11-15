@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"hotelos/backend/internal/database"
@@ -53,6 +54,10 @@ func CreateReservation(c *gin.Context) {
 
 	if !cOut.After(cIn) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Check-out date must be strictly after check-in date"})
+		return
+	}
+	if req.Adults < 1 || req.Children < 0 || req.AdvancePayment < 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Adults must be at least 1; children and advance payment cannot be negative"})
 		return
 	}
 
@@ -111,14 +116,34 @@ func CreateReservation(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Room type not found"})
 		return
 	}
+	if req.Adults > roomType.CapacityAdults || req.Children > roomType.CapacityChildren || req.Adults+req.Children > roomType.MaxOccupancy {
+		tx.Rollback()
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Guest count exceeds the selected room type capacity"})
+		return
+	}
+	var property models.Property
+	if err := tx.First(&property, "id = ?", roomType.PropertyID).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Room type is not attached to a valid property"})
+		return
+	}
+	var hotel models.Hotel
+	if err := tx.First(&hotel, "id = ?", property.HotelID).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Property is not attached to a valid hotel"})
+		return
+	}
 
 	// 3. Fetch RatePlan
 	var ratePlan models.RatePlan
 	priceModifier := 0.0
 	if req.RatePlanID != nil && *req.RatePlanID != uuid.Nil {
-		if err := tx.First(&ratePlan, "id = ?", *req.RatePlanID).Error; err == nil {
-			priceModifier = ratePlan.PriceModifierPercentage
+		if err := tx.First(&ratePlan, "id = ? AND hotel_id = ?", *req.RatePlanID, hotel.ID).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Rate plan is invalid for this hotel"})
+			return
 		}
+		priceModifier = ratePlan.PriceModifierPercentage
 	}
 
 	// 4. Room Allocation & Concurrency Guard against Double Booking
@@ -136,6 +161,11 @@ func CreateReservation(c *gin.Context) {
 		if room.Status == models.RoomStatusOutOfOrder {
 			tx.Rollback()
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Selected room is currently Out of Order and cannot be booked"})
+			return
+		}
+		if room.RoomTypeID != roomType.ID || room.PropertyID != property.ID {
+			tx.Rollback()
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Selected room does not match the requested room type and property"})
 			return
 		}
 
@@ -158,7 +188,13 @@ func CreateReservation(c *gin.Context) {
 	} else {
 		// Auto-assign available room in this category
 		var candidateRooms []models.Room
-		tx.Where("room_type_id = ? AND status != ?", roomType.ID, models.RoomStatusOutOfOrder).Find(&candidateRooms)
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE", Options: "SKIP LOCKED"}).
+			Where("room_type_id = ? AND status IN (?, ?)", roomType.ID, models.RoomStatusAvailable, models.RoomStatusInspected).
+			Order("room_number asc").Find(&candidateRooms).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to allocate an available room"})
+			return
+		}
 
 		for _, cand := range candidateRooms {
 			var conflictCount int64
@@ -186,14 +222,17 @@ func CreateReservation(c *gin.Context) {
 	// 5. Financial Calculations
 	baseRate := roomType.BasePrice * (1.0 + priceModifier/100.0)
 	subtotal := baseRate * float64(nights)
-	tax := subtotal * 0.15          // 15% VAT
-	serviceCharge := subtotal * 0.10 // 10% Service charge
+	tax := subtotal * hotel.TaxRate / 100
+	serviceCharge := subtotal * hotel.ServiceChargeRate / 100
 	totalAmount := subtotal + tax + serviceCharge
+	if req.AdvancePayment > totalAmount {
+		tx.Rollback()
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Advance payment cannot exceed the reservation total"})
+		return
+	}
 
 	// Sequence generation
-	var resCount int64
-	tx.Model(&models.Reservation{}).Count(&resCount)
-	resNumber := fmt.Sprintf("RES-%d-%04d", time.Now().Year(), resCount+1)
+	resNumber := fmt.Sprintf("RES-%d-%s", time.Now().Year(), strings.ToUpper(uuid.NewString()[:8]))
 
 	source := models.SourceDirect
 	if req.BookingSource != "" {
@@ -206,7 +245,7 @@ func CreateReservation(c *gin.Context) {
 	}
 
 	res := models.Reservation{
-		HotelID:           roomType.PropertyID,
+		HotelID:           hotel.ID,
 		PropertyID:        roomType.PropertyID,
 		ReservationNumber: resNumber,
 		GuestID:           guest.ID,
@@ -246,7 +285,22 @@ func CreateReservation(c *gin.Context) {
 			TotalPayments: req.AdvancePayment,
 			Balance:       totalAmount - req.AdvancePayment,
 		}
-		tx.Create(&folio)
+		if err := tx.Create(&folio).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create reservation folio"})
+			return
+		}
+
+		charges := []models.FolioTransaction{
+			{FolioID: folio.ID, Type: models.TxRoomCharge, Description: fmt.Sprintf("%d Nights Accommodation", nights), Amount: subtotal},
+			{FolioID: folio.ID, Type: models.TxTax, Description: "VAT", Amount: tax},
+			{FolioID: folio.ID, Type: models.TxServiceCharge, Description: "Service Charge", Amount: serviceCharge},
+		}
+		if err := tx.Create(&charges).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to itemize reservation charges"})
+			return
+		}
 
 		txPay := models.FolioTransaction{
 			FolioID:     folio.ID,
@@ -255,7 +309,11 @@ func CreateReservation(c *gin.Context) {
 			Amount:      req.AdvancePayment,
 			IsCredit:    true,
 		}
-		tx.Create(&txPay)
+		if err := tx.Create(&txPay).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to record advance payment"})
+			return
+		}
 
 		payment := models.Payment{
 			PaymentNumber:  fmt.Sprintf("PAY-%d-%X", time.Now().Year(), time.Now().UnixNano()%100000000),
@@ -267,7 +325,11 @@ func CreateReservation(c *gin.Context) {
 			Status:         models.PaymentCompleted,
 			Notes:          "Online/Phone Advance Deposit",
 		}
-		tx.Create(&payment)
+		if err := tx.Create(&payment).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save advance payment"})
+			return
+		}
 	}
 
 	if err := tx.Commit().Error; err != nil {
@@ -362,8 +424,13 @@ func CancelReservation(c *gin.Context) {
 		return
 	}
 
-	if res.Status == models.ResCheckedIn {
+	if res.Status == models.ResCheckedIn || res.Status == models.ResCheckedOut || res.Status == models.ResCancelled || res.Status == models.ResNoShow {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Cannot cancel a guest who is currently checked in. Perform checkout instead."})
+		return
+	}
+	var folio models.GuestFolio
+	if err := database.DB.First(&folio, "reservation_id = ?", res.ID).Error; err == nil && folio.TotalPayments > 0 {
+		c.JSON(http.StatusConflict, gin.H{"error": "Reservation has recorded payments; refund or reverse them before cancellation"})
 		return
 	}
 

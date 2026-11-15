@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"hotelos/backend/internal/database"
@@ -11,6 +12,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 func GetFolioByID(c *gin.Context) {
@@ -23,8 +26,8 @@ func GetFolioByID(c *gin.Context) {
 
 	var folio models.GuestFolio
 	err = database.DB.Preload("Reservation").Preload("Guest").Preload("Room").
-		Preload("Transactions", func(db *gin.Engine) interface{} {
-			return database.DB.Order("created_at asc")
+		Preload("Transactions", func(db *gorm.DB) *gorm.DB {
+			return db.Order("created_at asc")
 		}).
 		First(&folio, "id = ?", folioID).Error
 
@@ -75,16 +78,20 @@ func AddFolioCharge(c *gin.Context) {
 		return
 	}
 
-	if folio.Status == models.FolioClosed {
+	if folio.Status != models.FolioOpen {
 		tx.Rollback()
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Cannot add charges to a closed folio"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Charges can only be added to an open folio"})
 		return
 	}
 
 	// Update folio totals
 	folio.TotalCharges += req.Amount
 	folio.Balance += req.Amount
-	tx.Save(&folio)
+	if err := tx.Save(&folio).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update folio totals"})
+		return
+	}
 
 	// Insert transaction
 	txn := models.FolioTransaction{
@@ -94,7 +101,11 @@ func AddFolioCharge(c *gin.Context) {
 		Amount:      req.Amount,
 		IsCredit:    false,
 	}
-	tx.Create(&txn)
+	if err := tx.Create(&txn).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to record folio charge"})
+		return
+	}
 
 	if err := tx.Commit().Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add charge"})
@@ -131,6 +142,14 @@ func RecordPayment(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Payment amount must be greater than zero"})
 		return
 	}
+	if !validPaymentMethod(req.PaymentMethod) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Unsupported payment method"})
+		return
+	}
+	if (req.FolioID == nil || *req.FolioID == uuid.Nil) && (req.InvoiceID == nil || *req.InvoiceID == uuid.Nil) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "A folio_id or invoice_id is required"})
+		return
+	}
 
 	tx := database.DB.Begin()
 	defer func() {
@@ -139,7 +158,55 @@ func RecordPayment(c *gin.Context) {
 		}
 	}()
 
-	payNumber := fmt.Sprintf("PAY-%d-%X", time.Now().Year(), time.Now().UnixNano()%100000000)
+	payNumber := fmt.Sprintf("PAY-%d-%s", time.Now().Year(), strings.ToUpper(uuid.NewString()[:8]))
+	var folio *models.GuestFolio
+	if req.FolioID != nil && *req.FolioID != uuid.Nil {
+		var f models.GuestFolio
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&f, "id = ?", *req.FolioID).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusNotFound, gin.H{"error": "Folio not found"})
+			return
+		}
+		if f.Status != models.FolioOpen || f.GuestID != req.GuestID {
+			tx.Rollback()
+			c.JSON(http.StatusConflict, gin.H{"error": "Payment guest does not own an open folio"})
+			return
+		}
+		if req.Amount > f.Balance {
+			tx.Rollback()
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Payment exceeds the outstanding folio balance"})
+			return
+		}
+		folio = &f
+	}
+	var invoice *models.Invoice
+	if req.InvoiceID != nil && *req.InvoiceID != uuid.Nil {
+		var inv models.Invoice
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&inv, "id = ?", *req.InvoiceID).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusNotFound, gin.H{"error": "Invoice not found"})
+			return
+		}
+		if inv.GuestID != req.GuestID || inv.Status == models.InvoiceVoid {
+			tx.Rollback()
+			c.JSON(http.StatusConflict, gin.H{"error": "Payment guest does not own a payable invoice"})
+			return
+		}
+		if folio != nil && inv.FolioID != folio.ID {
+			tx.Rollback()
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invoice and folio do not belong together"})
+			return
+		}
+		invoice = &inv
+	}
+	if req.TransactionRef != "" {
+		var duplicate int64
+		if err := tx.Model(&models.Payment{}).Where("transaction_ref = ? AND status = ?", req.TransactionRef, models.PaymentCompleted).Count(&duplicate).Error; err != nil || duplicate > 0 {
+			tx.Rollback()
+			c.JSON(http.StatusConflict, gin.H{"error": "Payment transaction reference already exists"})
+			return
+		}
+	}
 
 	payment := models.Payment{
 		PaymentNumber:  payNumber,
@@ -160,39 +227,42 @@ func RecordPayment(c *gin.Context) {
 	}
 
 	// Update Folio if specified
-	if req.FolioID != nil && *req.FolioID != uuid.Nil {
-		var folio models.GuestFolio
-		if err := tx.First(&folio, "id = ?", *req.FolioID).Error; err == nil {
-			folio.TotalPayments += req.Amount
-			folio.Balance = folio.TotalCharges - folio.TotalPayments
-			if folio.Balance <= 0 {
-				folio.Balance = 0
-			}
-			tx.Save(&folio)
+	if folio != nil {
+		folio.TotalPayments += req.Amount
+		folio.Balance = folio.TotalCharges - folio.TotalPayments
+		if err := tx.Save(folio).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update folio"})
+			return
+		}
 
-			txPay := models.FolioTransaction{
-				FolioID:     folio.ID,
-				Type:        models.TxPayment,
-				Description: fmt.Sprintf("Payment via %s (%s)", req.PaymentMethod, payNumber),
-				ReferenceID: payNumber,
-				Amount:      req.Amount,
-				IsCredit:    true,
-			}
-			tx.Create(&txPay)
+		txPay := models.FolioTransaction{
+			FolioID:     folio.ID,
+			Type:        models.TxPayment,
+			Description: fmt.Sprintf("Payment via %s (%s)", req.PaymentMethod, payNumber),
+			ReferenceID: payNumber,
+			Amount:      req.Amount,
+			IsCredit:    true,
+		}
+		if err := tx.Create(&txPay).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to record folio payment"})
+			return
 		}
 	}
 
 	// Update Invoice if specified
-	if req.InvoiceID != nil && *req.InvoiceID != uuid.Nil {
-		var inv models.Invoice
-		if err := tx.First(&inv, "id = ?", *req.InvoiceID).Error; err == nil {
-			inv.PaidAmount += req.Amount
-			if inv.PaidAmount >= inv.GrandTotal {
-				inv.Status = models.InvoicePaid
-			} else {
-				inv.Status = models.InvoicePartiallyPaid
-			}
-			tx.Save(&inv)
+	if invoice != nil {
+		invoice.PaidAmount += req.Amount
+		if invoice.PaidAmount >= invoice.GrandTotal {
+			invoice.Status = models.InvoicePaid
+		} else {
+			invoice.Status = models.InvoicePartiallyPaid
+		}
+		if err := tx.Save(invoice).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update invoice"})
+			return
 		}
 	}
 
@@ -207,6 +277,80 @@ func RecordPayment(c *gin.Context) {
 		"message": fmt.Sprintf("Payment %s of %.2f BDT recorded successfully.", payNumber, req.Amount),
 		"payment": payment,
 	})
+}
+
+func validPaymentMethod(method models.PaymentMethod) bool {
+	switch method {
+	case models.PayMethodCash, models.PayMethodDebitCard, models.PayMethodCreditCard, models.PayMethodBankTransfer, models.PayMethodBkash, models.PayMethodNagad:
+		return true
+	default:
+		return false
+	}
+}
+
+func RefundPayment(c *gin.Context) {
+	paymentID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid payment ID"})
+		return
+	}
+	var req struct {
+		Amount float64 `json:"amount"`
+		Reason string  `json:"reason"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil || req.Amount <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "A positive refund amount is required"})
+		return
+	}
+	tx := database.DB.Begin()
+	var payment models.Payment
+	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&payment, "id = ?", paymentID).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusNotFound, gin.H{"error": "Payment not found"})
+		return
+	}
+	if payment.Status != models.PaymentCompleted || req.Amount != payment.Amount {
+		tx.Rollback()
+		c.JSON(http.StatusConflict, gin.H{"error": "Only a full refund of a completed payment is supported"})
+		return
+	}
+	if payment.FolioID == nil {
+		tx.Rollback()
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Payment is not attached to a folio"})
+		return
+	}
+	var folio models.GuestFolio
+	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&folio, "id = ?", *payment.FolioID).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusNotFound, gin.H{"error": "Folio not found"})
+		return
+	}
+	payment.Status = models.PaymentRefunded
+	if err := tx.Save(&payment).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to refund payment"})
+		return
+	}
+	folio.TotalPayments -= req.Amount
+	folio.Balance = folio.TotalCharges - folio.TotalPayments
+	folio.Status = models.FolioOpen
+	if err := tx.Save(&folio).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update folio"})
+		return
+	}
+	refund := models.FolioTransaction{FolioID: folio.ID, Type: models.TxRefund, Description: "Payment refund: " + req.Reason, ReferenceID: payment.PaymentNumber, Amount: req.Amount, IsCredit: false}
+	if err := tx.Create(&refund).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to record refund"})
+		return
+	}
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to commit refund"})
+		return
+	}
+	websocket.BroadcastEvent("PAYMENT_REFUNDED", payment)
+	c.JSON(http.StatusOK, gin.H{"payment": payment, "folio": folio})
 }
 
 func GetInvoices(c *gin.Context) {

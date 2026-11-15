@@ -11,20 +11,20 @@ import (
 )
 
 type DailyBusinessReport struct {
-	ReportDate          string  `json:"report_date"`
-	TotalRooms          int64   `json:"total_rooms"`
-	RoomsSold           int64   `json:"rooms_sold"`
-	AvailableRooms      int64   `json:"available_rooms"`
-	OccupancyRate       float64 `json:"occupancy_rate"`
-	TotalRoomRevenue    float64 `json:"total_room_revenue"`
-	TotalFBRevenue      float64 `json:"total_fb_revenue"`
-	TotalPayments       float64 `json:"total_payments"`
-	TotalTaxCollected   float64 `json:"total_tax_collected"`
-	ADR                 float64 `json:"adr"`
-	RevPAR              float64 `json:"revpar"`
-	CheckInsCount       int64   `json:"check_ins_count"`
-	CheckOutsCount      int64   `json:"check_outs_count"`
-	InHouseGuestsCount  int64   `json:"in_house_guests_count"`
+	ReportDate         string  `json:"report_date"`
+	TotalRooms         int64   `json:"total_rooms"`
+	RoomsSold          int64   `json:"rooms_sold"`
+	AvailableRooms     int64   `json:"available_rooms"`
+	OccupancyRate      float64 `json:"occupancy_rate"`
+	TotalRoomRevenue   float64 `json:"total_room_revenue"`
+	TotalFBRevenue     float64 `json:"total_fb_revenue"`
+	TotalPayments      float64 `json:"total_payments"`
+	TotalTaxCollected  float64 `json:"total_tax_collected"`
+	ADR                float64 `json:"adr"`
+	RevPAR             float64 `json:"revpar"`
+	CheckInsCount      int64   `json:"check_ins_count"`
+	CheckOutsCount     int64   `json:"check_outs_count"`
+	InHouseGuestsCount int64   `json:"in_house_guests_count"`
 }
 
 func GetDailyBusinessReport(c *gin.Context) {
@@ -109,4 +109,3 @@ func GetDailyBusinessReport(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"report": report})
 }
-

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
@@ -52,6 +53,17 @@ func CreateHousekeepingTask(c *gin.Context) {
 	priority := models.PriorityMedium
 	if req.Priority != "" {
 		priority = req.Priority
+	}
+	var room models.Room
+	if err := database.DB.First(&room, "id = ?", req.RoomID).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Room not found"})
+		return
+	}
+	var activeCount int64
+	database.DB.Model(&models.HousekeepingTask{}).Where("room_id = ? AND completed_at IS NULL", req.RoomID).Count(&activeCount)
+	if activeCount > 0 {
+		c.JSON(http.StatusConflict, gin.H{"error": "Room already has an active housekeeping task"})
+		return
 	}
 
 	checklist := req.Checklist
@@ -113,6 +125,36 @@ func UpdateHousekeepingStatus(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Task not found"})
 		return
 	}
+	validTransition := (task.Status == models.RoomStatusDirty && req.Status == models.RoomStatusCleaning) ||
+		(task.Status == models.RoomStatusCleaning && req.Status == models.RoomStatusInspected) ||
+		(task.Status == models.RoomStatusInspected && req.Status == models.RoomStatusAvailable)
+	if !validTransition {
+		tx.Rollback()
+		c.JSON(http.StatusConflict, gin.H{"error": fmt.Sprintf("Invalid housekeeping transition from %s to %s", task.Status, req.Status)})
+		return
+	}
+	if req.Status == models.RoomStatusInspected || req.Status == models.RoomStatusAvailable {
+		checklist := task.Checklist
+		if req.Checklist != "" {
+			checklist = req.Checklist
+		}
+		var items []struct {
+			Item string `json:"item"`
+			Done bool   `json:"done"`
+		}
+		if json.Unmarshal([]byte(checklist), &items) != nil || len(items) == 0 {
+			tx.Rollback()
+			c.JSON(http.StatusBadRequest, gin.H{"error": "A valid housekeeping checklist is required"})
+			return
+		}
+		for _, item := range items {
+			if !item.Done {
+				tx.Rollback()
+				c.JSON(http.StatusConflict, gin.H{"error": "Complete every housekeeping checklist item before inspection"})
+				return
+			}
+		}
+	}
 
 	now := time.Now()
 	task.Status = req.Status
@@ -126,7 +168,7 @@ func UpdateHousekeepingStatus(c *gin.Context) {
 	if req.Status == models.RoomStatusCleaning && task.StartedAt == nil {
 		task.StartedAt = &now
 	}
-	if req.Status == models.RoomStatusAvailable || req.Status == models.RoomStatusInspected {
+	if req.Status == models.RoomStatusAvailable {
 		task.CompletedAt = &now
 	}
 
@@ -165,4 +207,3 @@ func UpdateHousekeepingStatus(c *gin.Context) {
 		"message": fmt.Sprintf("Housekeeping task updated to '%s'. Room status synchronized.", req.Status),
 	})
 }
-

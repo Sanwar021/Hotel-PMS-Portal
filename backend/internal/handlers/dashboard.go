@@ -177,4 +177,3 @@ func GetDashboardStats(c *gin.Context) {
 		"notifications":       notifications,
 	})
 }
-

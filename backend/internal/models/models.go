@@ -172,12 +172,12 @@ const (
 type BookingSource string
 
 const (
-	SourceDirect     BookingSource = "direct"
-	SourceWalkIn     BookingSource = "walk_in"
-	SourceTelephone  BookingSource = "telephone"
-	SourceWebsite    BookingSource = "website"
-	SourceOTA        BookingSource = "ota"
-	SourceCorporate  BookingSource = "corporate"
+	SourceDirect      BookingSource = "direct"
+	SourceWalkIn      BookingSource = "walk_in"
+	SourceTelephone   BookingSource = "telephone"
+	SourceWebsite     BookingSource = "website"
+	SourceOTA         BookingSource = "ota"
+	SourceCorporate   BookingSource = "corporate"
 	SourceTravelAgent BookingSource = "travel_agent"
 )
 
@@ -271,13 +271,13 @@ const (
 
 type FolioTransaction struct {
 	BaseModel
-	FolioID         uuid.UUID       `gorm:"type:uuid;not null;index" json:"folio_id"`
-	Type            TransactionType `gorm:"size:30;not null" json:"type"`
-	Description     string          `gorm:"size:255;not null" json:"description"`
-	ReferenceID     string          `gorm:"size:100" json:"reference_id"` // e.g. Order ID, payment ref
-	Amount          float64         `gorm:"type:decimal(12,2);not null" json:"amount"`
-	IsCredit        bool            `gorm:"default:false" json:"is_credit"` // true if payment/refund
-	RecordedByUserID *uuid.UUID     `gorm:"type:uuid" json:"recorded_by_user_id"`
+	FolioID          uuid.UUID       `gorm:"type:uuid;not null;index" json:"folio_id"`
+	Type             TransactionType `gorm:"size:30;not null" json:"type"`
+	Description      string          `gorm:"size:255;not null" json:"description"`
+	ReferenceID      string          `gorm:"size:100" json:"reference_id"` // e.g. Order ID, payment ref
+	Amount           float64         `gorm:"type:decimal(12,2);not null" json:"amount"`
+	IsCredit         bool            `gorm:"default:false" json:"is_credit"` // true if payment/refund
+	RecordedByUserID *uuid.UUID      `gorm:"type:uuid" json:"recorded_by_user_id"`
 }
 
 type InvoiceStatus string
@@ -373,7 +373,7 @@ type HousekeepingTask struct {
 	TaskType         HousekeepingTaskType `gorm:"size:50;not null" json:"task_type"`
 	Priority         PriorityLevel        `gorm:"size:30;default:'medium'" json:"priority"`
 	Status           RoomStatus           `gorm:"size:30;default:'dirty';index" json:"status"` // dirty -> cleaning -> inspected -> available
-	Checklist        string               `gorm:"type:text" json:"checklist"`                 // JSON array of checked tasks
+	Checklist        string               `gorm:"type:text" json:"checklist"`                  // JSON array of checked tasks
 	StartedAt        *time.Time           `json:"started_at"`
 	CompletedAt      *time.Time           `json:"completed_at"`
 	Notes            string               `gorm:"type:text" json:"notes"`
@@ -390,7 +390,7 @@ type RestaurantTable struct {
 	BaseModel
 	TableNumber string `gorm:"size:50;not null" json:"table_number"`
 	Capacity    int    `gorm:"default:4" json:"capacity"`
-	Location    string `gorm:"size:50;default:'indoor'" json:"location"` // indoor, terrace, patio, lounge
+	Location    string `gorm:"size:50;default:'indoor'" json:"location"`  // indoor, terrace, patio, lounge
 	Status      string `gorm:"size:30;default:'available'" json:"status"` // available, occupied, reserved
 }
 
@@ -429,13 +429,13 @@ const (
 type OrderStatus string
 
 const (
-	OrderPlaced       OrderStatus = "placed"
-	OrderPreparing    OrderStatus = "preparing"
-	OrderReady        OrderStatus = "ready"
-	OrderServed       OrderStatus = "served"
-	OrderPaid         OrderStatus = "paid"
+	OrderPlaced        OrderStatus = "placed"
+	OrderPreparing     OrderStatus = "preparing"
+	OrderReady         OrderStatus = "ready"
+	OrderServed        OrderStatus = "served"
+	OrderPaid          OrderStatus = "paid"
 	OrderChargedToRoom OrderStatus = "charged_to_room"
-	OrderCancelled    OrderStatus = "cancelled"
+	OrderCancelled     OrderStatus = "cancelled"
 )
 
 type RestaurantOrder struct {
@@ -547,11 +547,11 @@ type PurchaseOrder struct {
 
 type PurchaseOrderItem struct {
 	BaseModel
-	POID        uuid.UUID `gorm:"type:uuid;not null;index" json:"po_id"`
-	ItemName    string    `gorm:"size:150;not null" json:"item_name"`
-	Quantity    int       `gorm:"not null" json:"quantity"`
-	UnitPrice   float64   `gorm:"type:decimal(12,2);not null" json:"unit_price"`
-	TotalPrice  float64   `gorm:"type:decimal(12,2);not null" json:"total_price"`
+	POID       uuid.UUID `gorm:"type:uuid;not null;index" json:"po_id"`
+	ItemName   string    `gorm:"size:150;not null" json:"item_name"`
+	Quantity   int       `gorm:"not null" json:"quantity"`
+	UnitPrice  float64   `gorm:"type:decimal(12,2);not null" json:"unit_price"`
+	TotalPrice float64   `gorm:"type:decimal(12,2);not null" json:"total_price"`
 }
 
 // -------------------------------------------------------------
@@ -624,36 +624,39 @@ type Shift struct {
 type UserRole string
 
 const (
-	RoleSuperAdmin         UserRole = "super_admin"
-	RoleHotelOwner         UserRole = "hotel_owner"
-	RoleGeneralManager     UserRole = "general_manager"
-	RoleHotelManager       UserRole = "hotel_manager"
-	RoleReceptionist       UserRole = "receptionist"
-	RoleHousekeepingStaff  UserRole = "housekeeping_staff"
-	RoleAccountant         UserRole = "accountant"
-	RoleRestaurantManager  UserRole = "restaurant_manager"
-	RoleRestaurantStaff    UserRole = "restaurant_staff"
-	RoleInventoryManager   UserRole = "inventory_manager"
-	RoleMaintenanceStaff   UserRole = "maintenance_staff"
+	RoleSuperAdmin        UserRole = "super_admin"
+	RoleHotelOwner        UserRole = "hotel_owner"
+	RoleGeneralManager    UserRole = "general_manager"
+	RoleHotelManager      UserRole = "hotel_manager"
+	RoleReceptionist      UserRole = "receptionist"
+	RoleHousekeepingStaff UserRole = "housekeeping_staff"
+	RoleAccountant        UserRole = "accountant"
+	RoleRestaurantManager UserRole = "restaurant_manager"
+	RoleRestaurantStaff   UserRole = "restaurant_staff"
+	RoleInventoryManager  UserRole = "inventory_manager"
+	RoleMaintenanceStaff  UserRole = "maintenance_staff"
 )
 
 type User struct {
 	BaseModel
-	HotelID      *uuid.UUID `gorm:"type:uuid;index" json:"hotel_id"`
-	Username     string     `gorm:"size:100;unique;not null;index" json:"username"`
-	Email        string     `gorm:"size:100;unique;not null;index" json:"email"`
-	PasswordHash string     `gorm:"size:255;not null" json:"-"`
-	FirstName    string     `gorm:"size:100;not null" json:"first_name"`
-	LastName     string     `gorm:"size:100;not null" json:"last_name"`
-	Role         UserRole   `gorm:"size:50;not null;default:'receptionist';index" json:"role"`
-	IsActive     bool       `gorm:"default:true" json:"is_active"`
-	LastLoginAt  *time.Time `json:"last_login_at"`
+	HotelID             *uuid.UUID `gorm:"type:uuid;index" json:"hotel_id"`
+	Username            string     `gorm:"size:100;unique;not null;index" json:"username"`
+	Email               string     `gorm:"size:100;unique;not null;index" json:"email"`
+	PasswordHash        string     `gorm:"size:255;not null" json:"-"`
+	FirstName           string     `gorm:"size:100;not null" json:"first_name"`
+	LastName            string     `gorm:"size:100;not null" json:"last_name"`
+	Role                UserRole   `gorm:"size:50;not null;default:'receptionist';index" json:"role"`
+	IsActive            bool       `gorm:"default:true" json:"is_active"`
+	LastLoginAt         *time.Time `json:"last_login_at"`
+	PasswordChangedAt   *time.Time `json:"-"`
+	FailedLoginAttempts int        `gorm:"default:0" json:"-"`
+	LockedUntil         *time.Time `json:"-"`
 }
 
 type AuditLog struct {
 	BaseModel
 	UserID     *uuid.UUID `gorm:"type:uuid;index" json:"user_id"`
-	Action     string     `gorm:"size:100;not null" json:"action"`     // create, update, delete, check_in, check_out, payment
+	Action     string     `gorm:"size:100;not null" json:"action"`            // create, update, delete, check_in, check_out, payment
 	EntityType string     `gorm:"size:100;not null;index" json:"entity_type"` // reservation, room, folio, payment, etc.
 	EntityID   string     `gorm:"size:100;not null" json:"entity_id"`
 	Details    string     `gorm:"type:text" json:"details"`
@@ -664,11 +667,10 @@ type AuditLog struct {
 
 type Notification struct {
 	BaseModel
-	UserID    *uuid.UUID `gorm:"type:uuid;index" json:"user_id"` // null for broadcast to all staff
-	Title     string     `gorm:"size:150;not null" json:"title"`
-	Message   string     `gorm:"type:text;not null" json:"message"`
-	Type      string     `gorm:"size:50;default:'info'" json:"type"` // info, success, warning, error
-	Link      string     `gorm:"size:255" json:"link"`
-	IsRead    bool       `gorm:"default:false;index" json:"is_read"`
+	UserID  *uuid.UUID `gorm:"type:uuid;index" json:"user_id"` // null for broadcast to all staff
+	Title   string     `gorm:"size:150;not null" json:"title"`
+	Message string     `gorm:"type:text;not null" json:"message"`
+	Type    string     `gorm:"size:50;default:'info'" json:"type"` // info, success, warning, error
+	Link    string     `gorm:"size:255" json:"link"`
+	IsRead  bool       `gorm:"default:false;index" json:"is_read"`
 }
-

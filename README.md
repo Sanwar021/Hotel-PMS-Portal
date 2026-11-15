@@ -167,3 +167,11 @@ npm run dev
 Open **`http://localhost:5174`** in your browser.
 Log in with `admin` / `admin123`.
 
+# Production safety
+
+Production deployments must set `SEED_DEMO_DATA=false`; demo credentials must never be used outside development. On a clean database, configure the five `BOOTSTRAP_*` variables shown in `backend/.env.example`. The first hotel and Super Admin are created once, transactionally.
+
+The backend enforces room-overlap, folio, payment, role, and state-transition rules in both application code and PostgreSQL. PostgreSQL must allow the `btree_gist` extension used by the room-allocation exclusion constraint.
+
+For Vercel Services, keep the repository root as the project root and configure all backend variables in the project environment. The frontend uses same-origin `/api/v1` and authenticated `/ws` routes automatically.
+
