@@ -5,15 +5,15 @@ import { useAuth } from '../../contexts/AuthContext';
 import hotelBackground from '../../assets/hotel-login-bg.png';
 
 const DEMO_USERS = [
-  { label: 'Super Admin', username: 'admin', password: 'admin123' },
-  { label: 'Reception', username: 'reception', password: 'reception123' },
-  { label: 'Accounts', username: 'accountant', password: 'account123' },
-  { label: 'Housekeeping', username: 'housekeeping', password: 'clean123' },
+  { label: 'Super Admin', username: 'admin' },
+  { label: 'Reception', username: 'reception' },
+  { label: 'Accounts', username: 'accountant' },
+  { label: 'Housekeeping', username: 'housekeeping' },
 ];
 
 export const LoginPage: React.FC = () => {
   const [username, setUsername] = useState('admin');
-  const [password, setPassword] = useState('admin123');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [helpVisible, setHelpVisible] = useState(false);
@@ -35,9 +35,9 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-  const selectDemoUser = (demoUsername: string, demoPassword: string) => {
+  const selectDemoUser = (demoUsername: string) => {
     setUsername(demoUsername);
-    setPassword(demoPassword);
+    setPassword('');
     setError(null);
   };
 
@@ -116,14 +116,14 @@ export const LoginPage: React.FC = () => {
 
               <div className="mt-6 border-t border-white/10 pt-5">
                 <div className="mb-3 flex items-center justify-between">
-                  <span className="text-[10px] font-semibold uppercase tracking-[.16em] text-[#c4ced1]">Demo access</span>
-                  <span className="text-[11px] text-[#82949b]">Select a role</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-[.16em] text-[#c4ced1]">Staff accounts</span>
+                  <span className="text-[11px] text-[#82949b]">Select your role</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   {DEMO_USERS.map((demo) => {
                     const isSelected = username === demo.username;
                     return (
-                      <button key={demo.username} type="button" aria-pressed={isSelected} onClick={() => selectDemoUser(demo.username, demo.password)} className={`min-h-14 rounded-xl border px-3 py-2.5 text-left transition ${isSelected ? 'border-[#dfad48] bg-[#dba33a]/15 shadow-[inset_0_0_0_1px_rgba(223,173,72,.15)]' : 'border-white/10 bg-white/[.035] hover:border-[#d1a34d]/50 hover:bg-white/[.065]'}`}>
+                      <button key={demo.username} type="button" aria-pressed={isSelected} onClick={() => selectDemoUser(demo.username)} className={`min-h-14 rounded-xl border px-3 py-2.5 text-left transition ${isSelected ? 'border-[#dfad48] bg-[#dba33a]/15 shadow-[inset_0_0_0_1px_rgba(223,173,72,.15)]' : 'border-white/10 bg-white/[.035] hover:border-[#d1a34d]/50 hover:bg-white/[.065]'}`}>
                         <span className="block text-xs font-bold text-[#f5ecdd]">{demo.label}</span>
                         <span className="mt-0.5 block text-[11px] text-[#91a2a9]">{demo.username}</span>
                       </button>
