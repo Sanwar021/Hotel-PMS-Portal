@@ -12,11 +12,14 @@ import { inventoryApi } from '../../api/endpoints';
 import { PageHeader } from '../../components/common/PageHeader';
 import { Modal } from '../../components/common/Modal';
 import { InventoryItem } from '../../types';
+import { SearchSortControls } from '../../components/common/SearchSortControls';
 
 export const InventoryPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [categoryFilter, setCategoryFilter] = useState('');
   const [lowStockOnly, setLowStockOnly] = useState(false);
+  const [search, setSearch] = useState('');
+  const [sort, setSort] = useState('name');
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);
   const [adjustType, setAdjustType] = useState<'consumed' | 'received' | 'adjustment'>('consumed');
@@ -37,6 +40,14 @@ export const InventoryPage: React.FC = () => {
     setAdjustQty(5);
     setIsAdjustModalOpen(true);
   };
+
+  const visibleItems = items.filter((item) => `${item.sku} ${item.name} ${item.category}`.toLowerCase().includes(search.toLowerCase())).sort((a, b) => {
+    if (sort === 'stock_low') return a.current_stock - b.current_stock;
+    if (sort === 'stock_high') return b.current_stock - a.current_stock;
+    if (sort === 'cost_high') return b.cost_per_unit - a.cost_per_unit;
+    if (sort === 'category') return a.category.localeCompare(b.category);
+    return a.name.localeCompare(b.name);
+  });
 
   const handleExecuteAdjust = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,6 +105,8 @@ export const InventoryPage: React.FC = () => {
         </button>
       </div>
 
+      <SearchSortControls search={search} onSearchChange={setSearch} sort={sort} onSortChange={setSort} resultCount={visibleItems.length} placeholder="Search SKU, item or category..." sortOptions={[{ value: 'name', label: 'Item name A–Z' }, { value: 'category', label: 'Category A–Z' }, { value: 'stock_low', label: 'Lowest stock first' }, { value: 'stock_high', label: 'Highest stock first' }, { value: 'cost_high', label: 'Highest unit cost' }]} />
+
       {/* Inventory Table */}
       <div className="rounded-2xl border border-hotel-line bg-hotel-panel overflow-hidden">
         <div className="overflow-x-auto">
@@ -110,7 +123,7 @@ export const InventoryPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-hotel-line">
-              {items.map((item) => {
+              {visibleItems.map((item) => {
                 const isLow = item.current_stock <= item.minimum_stock;
                 return (
                   <tr key={item.id} className="hover:bg-[#f7f8f4] transition-colors">

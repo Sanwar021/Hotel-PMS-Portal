@@ -18,11 +18,14 @@ import { PageHeader } from '../../components/common/PageHeader';
 import { StatusBadge } from '../../components/common/StatusBadge';
 import { Modal } from '../../components/common/Modal';
 import { Room, RoomStatus } from '../../types';
+import { SearchSortControls } from '../../components/common/SearchSortControls';
 
 export const RoomsPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [selectedFloor, setSelectedFloor] = useState<number>(0); // 0 = all
   const [statusFilter, setStatusFilter] = useState<string>('');
+  const [search, setSearch] = useState('');
+  const [sort, setSort] = useState('room_asc');
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [newStatus, setNewStatus] = useState<RoomStatus>('available');
@@ -59,9 +62,16 @@ export const RoomsPage: React.FC = () => {
     }
   };
 
-  const filteredRooms = selectedFloor === 0
+  const floorRooms = selectedFloor === 0
     ? rooms
     : rooms.filter((r) => r.floor?.floor_number === selectedFloor);
+  const filteredRooms = floorRooms.filter((room) => `${room.room_number} ${room.room_type?.name || ''} ${room.status} ${room.floor?.name || ''}`.toLowerCase().includes(search.toLowerCase())).sort((a, b) => {
+    if (sort === 'room_desc') return b.room_number.localeCompare(a.room_number, undefined, { numeric: true });
+    if (sort === 'type') return (a.room_type?.name || '').localeCompare(b.room_type?.name || '');
+    if (sort === 'status') return a.status.localeCompare(b.status);
+    if (sort === 'price_high') return (b.room_type?.base_price || 0) - (a.room_type?.base_price || 0);
+    return a.room_number.localeCompare(b.room_number, undefined, { numeric: true });
+  });
 
   return (
     <div className="space-y-6">
@@ -116,6 +126,8 @@ export const RoomsPage: React.FC = () => {
           <option value="out_of_order">Out of Order</option>
         </select>
       </div>
+
+      <SearchSortControls search={search} onSearchChange={setSearch} sort={sort} onSortChange={setSort} resultCount={filteredRooms.length} placeholder="Search room number, type, floor or status..." sortOptions={[{ value: 'room_asc', label: 'Room number ascending' }, { value: 'room_desc', label: 'Room number descending' }, { value: 'type', label: 'Room type A–Z' }, { value: 'status', label: 'Status A–Z' }, { value: 'price_high', label: 'Rate high to low' }]} />
 
       {/* Room Grid Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">

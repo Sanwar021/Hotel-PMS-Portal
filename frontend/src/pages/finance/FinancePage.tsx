@@ -16,12 +16,14 @@ import { billingApi, guestsApi } from '../../api/endpoints';
 import { PageHeader } from '../../components/common/PageHeader';
 import { StatusBadge } from '../../components/common/StatusBadge';
 import { Modal } from '../../components/common/Modal';
+import { SearchSortControls } from '../../components/common/SearchSortControls';
 import { Invoice, GuestFolio, Guest } from '../../types';
 
 export const FinancePage: React.FC = () => {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'invoices' | 'payments'>('invoices');
   const [search, setSearch] = useState('');
+  const [sort, setSort] = useState('newest');
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
   const [isRecordPaymentOpen, setIsRecordPaymentOpen] = useState(false);
@@ -90,7 +92,13 @@ export const FinancePage: React.FC = () => {
       inv.invoice_number.toLowerCase().includes(search.toLowerCase()) ||
       inv.guest?.first_name.toLowerCase().includes(search.toLowerCase()) ||
       inv.guest?.last_name.toLowerCase().includes(search.toLowerCase())
-  );
+  ).sort((a, b) => {
+    if (sort === 'guest') return `${a.guest?.first_name} ${a.guest?.last_name}`.localeCompare(`${b.guest?.first_name} ${b.guest?.last_name}`);
+    if (sort === 'amount_high') return b.grand_total - a.grand_total;
+    if (sort === 'amount_low') return a.grand_total - b.grand_total;
+    if (sort === 'status') return a.status.localeCompare(b.status);
+    return b.invoice_number.localeCompare(a.invoice_number);
+  });
 
   return (
     <div className="space-y-6">
@@ -109,19 +117,7 @@ export const FinancePage: React.FC = () => {
         }
       />
 
-      {/* Search & Actions */}
-      <div className="flex items-center justify-between border-b border-hotel-line pb-4">
-        <div className="relative w-72">
-          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-hotel-muted" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search invoice # or guest name..."
-            className="w-full rounded-lg border border-hotel-line bg-white/[0.03] py-1.5 pl-8 pr-3 text-xs text-hotel-text focus:border-hotel-accent focus:outline-none"
-          />
-        </div>
-      </div>
+      <SearchSortControls search={search} onSearchChange={setSearch} sort={sort} onSortChange={setSort} resultCount={filteredInvoices.length} placeholder="Search invoice # or guest name..." sortOptions={[{ value: 'newest', label: 'Newest invoice' }, { value: 'guest', label: 'Guest name A–Z' }, { value: 'amount_high', label: 'Amount high to low' }, { value: 'amount_low', label: 'Amount low to high' }, { value: 'status', label: 'Status A–Z' }]} />
 
       {/* Invoices Master Table */}
       <div className="rounded-2xl border border-hotel-line bg-hotel-panel overflow-hidden">

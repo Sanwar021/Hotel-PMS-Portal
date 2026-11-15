@@ -13,6 +13,7 @@ import { PageHeader } from '../../components/common/PageHeader';
 import { StatusBadge } from '../../components/common/StatusBadge';
 import { Modal } from '../../components/common/Modal';
 import { MaintenanceRequest } from '../../types';
+import { SearchSortControls } from '../../components/common/SearchSortControls';
 
 export const MaintenancePage: React.FC = () => {
   const queryClient = useQueryClient();
@@ -25,6 +26,8 @@ export const MaintenancePage: React.FC = () => {
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<'low' | 'medium' | 'high' | 'emergency'>('high');
   const [blockRoom, setBlockRoom] = useState(true);
+  const [search, setSearch] = useState('');
+  const [sort, setSort] = useState('newest');
 
   const { data: requests = [], isLoading } = useQuery({
     queryKey: ['maintenance'],
@@ -34,6 +37,13 @@ export const MaintenancePage: React.FC = () => {
   const { data: allRooms = [] } = useQuery({
     queryKey: ['all_rooms_maint'],
     queryFn: () => roomsApi.getRooms(),
+  });
+
+  const visibleRequests = requests.filter((request) => `${request.room?.room_number || ''} ${request.equipment_name} ${request.title} ${request.description} ${request.priority} ${request.status}`.toLowerCase().includes(search.toLowerCase())).sort((a, b) => {
+    if (sort === 'room') return (a.room?.room_number || '').localeCompare(b.room?.room_number || '', undefined, { numeric: true });
+    if (sort === 'priority') return ({ emergency: 0, high: 1, medium: 2, low: 3 }[a.priority] ?? 9) - ({ emergency: 0, high: 1, medium: 2, low: 3 }[b.priority] ?? 9);
+    if (sort === 'status') return a.status.localeCompare(b.status);
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
   });
 
   const handleCreateTicket = async (e: React.FormEvent) => {
@@ -89,6 +99,8 @@ export const MaintenancePage: React.FC = () => {
         }
       />
 
+      <SearchSortControls search={search} onSearchChange={setSearch} sort={sort} onSortChange={setSort} resultCount={visibleRequests.length} placeholder="Search room, asset, issue or status..." sortOptions={[{ value: 'newest', label: 'Newest reported' }, { value: 'priority', label: 'Priority: urgent first' }, { value: 'room', label: 'Room number' }, { value: 'status', label: 'Status A–Z' }]} />
+
       {/* Tickets List */}
       <div className="rounded-2xl border border-hotel-line bg-hotel-panel overflow-hidden">
         <div className="overflow-x-auto">
@@ -104,7 +116,7 @@ export const MaintenancePage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-hotel-line">
-              {requests.map((req) => (
+              {visibleRequests.map((req) => (
                 <tr key={req.id} className="hover:bg-[#f7f8f4] transition-colors">
                   <td className="py-3.5 px-4 font-serif font-bold text-hotel-gold">
                     {req.room ? `Room ${req.room.room_number}` : 'Central Facility'}

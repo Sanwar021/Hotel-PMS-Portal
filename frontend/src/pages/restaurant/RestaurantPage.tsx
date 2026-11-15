@@ -17,6 +17,7 @@ import { PageHeader } from '../../components/common/PageHeader';
 import { StatusBadge } from '../../components/common/StatusBadge';
 import { Modal } from '../../components/common/Modal';
 import { MenuCategory, MenuItem, RestaurantOrder, Room } from '../../types';
+import { SearchSortControls } from '../../components/common/SearchSortControls';
 
 export const RestaurantPage: React.FC = () => {
   const queryClient = useQueryClient();
@@ -26,6 +27,9 @@ export const RestaurantPage: React.FC = () => {
   const [selectedTableId, setSelectedTableId] = useState<string>('');
   const [selectedRoomId, setSelectedRoomId] = useState<string>('');
   const [orderNotes, setOrderNotes] = useState<string>('');
+  const [menuSearch, setMenuSearch] = useState('');
+  const [orderSearch, setOrderSearch] = useState('');
+  const [orderSort, setOrderSort] = useState('newest');
 
   // Charge to room modal state
   const [chargeOrder, setChargeOrder] = useState<RestaurantOrder | null>(null);
@@ -113,9 +117,15 @@ export const RestaurantPage: React.FC = () => {
     }
   };
 
-  const displayedCategories = selectedCategory
+  const displayedCategories = (selectedCategory
     ? categories.filter((c) => c.id === selectedCategory)
-    : categories;
+    : categories).map((category) => ({ ...category, menu_items: category.menu_items?.filter((item) => `${item.name} ${item.description}`.toLowerCase().includes(menuSearch.toLowerCase())) }));
+  const visibleOrders = orders.filter((order) => `${order.order_number} ${order.order_type} ${order.status} ${order.room?.room_number || ''} ${order.table?.table_number || ''} ${order.items?.map((item) => item.item_name).join(' ') || ''}`.toLowerCase().includes(orderSearch.toLowerCase())).sort((a, b) => {
+    if (orderSort === 'amount') return b.total - a.total;
+    if (orderSort === 'status') return a.status.localeCompare(b.status);
+    if (orderSort === 'location') return `${a.room?.room_number || ''}${a.table?.table_number || ''}`.localeCompare(`${b.room?.room_number || ''}${b.table?.table_number || ''}`, undefined, { numeric: true });
+    return b.order_number.localeCompare(a.order_number);
+  });
 
   return (
     <div className="space-y-6">
@@ -129,6 +139,7 @@ export const RestaurantPage: React.FC = () => {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Left Column: Menu Categories & Items */}
         <div className="space-y-4 lg:col-span-2">
+          <SearchSortControls compact search={menuSearch} onSearchChange={setMenuSearch} sort="name" onSortChange={() => undefined} placeholder="Search menu item or description..." sortOptions={[{ value: 'name', label: 'Menu items' }]} />
           {/* Categories Tab Selector */}
           <div className="flex flex-wrap gap-2 border-b border-hotel-line pb-3">
             <button
@@ -322,6 +333,8 @@ export const RestaurantPage: React.FC = () => {
           </div>
         </div>
 
+        <div className="mt-4"><SearchSortControls compact search={orderSearch} onSearchChange={setOrderSearch} sort={orderSort} onSortChange={setOrderSort} resultCount={visibleOrders.length} placeholder="Search order, item, room, table or status..." sortOptions={[{ value: 'newest', label: 'Newest order' }, { value: 'amount', label: 'Amount high to low' }, { value: 'status', label: 'Status A–Z' }, { value: 'location', label: 'Room / table' }]} /></div>
+
         <div className="mt-4 overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead>
@@ -336,7 +349,7 @@ export const RestaurantPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-hotel-line">
-              {orders.map((ord) => (
+              {visibleOrders.map((ord) => (
                 <tr key={ord.id} className="hover:bg-[#f7f8f4] transition-colors">
                   <td className="py-3 font-mono font-medium text-hotel-accent">
                     {ord.order_number}

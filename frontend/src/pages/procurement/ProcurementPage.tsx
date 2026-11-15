@@ -13,10 +13,13 @@ import { PageHeader } from '../../components/common/PageHeader';
 import { StatusBadge } from '../../components/common/StatusBadge';
 import { Modal } from '../../components/common/Modal';
 import { PurchaseOrder, Supplier } from '../../types';
+import { SearchSortControls } from '../../components/common/SearchSortControls';
 
 export const ProcurementPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [isNewPOModalOpen, setIsNewPOModalOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const [sort, setSort] = useState('newest');
 
   // New PO form
   const [poSupplierId, setPoSupplierId] = useState('');
@@ -42,6 +45,13 @@ export const ProcurementPage: React.FC = () => {
       alert(err.response?.data?.error || 'Failed to approve PO');
     }
   };
+
+  const visibleOrders = purchaseOrders.filter((po) => `${po.po_number} ${po.supplier?.name || ''} ${po.status} ${po.items?.map((item) => item.item_name).join(' ') || ''}`.toLowerCase().includes(search.toLowerCase())).sort((a, b) => {
+    if (sort === 'vendor') return (a.supplier?.name || '').localeCompare(b.supplier?.name || '');
+    if (sort === 'amount_high') return b.total_amount - a.total_amount;
+    if (sort === 'status') return a.status.localeCompare(b.status);
+    return b.po_number.localeCompare(a.po_number);
+  });
 
   const handleCreatePO = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,6 +90,8 @@ export const ProcurementPage: React.FC = () => {
         }
       />
 
+      <SearchSortControls search={search} onSearchChange={setSearch} sort={sort} onSortChange={setSort} resultCount={visibleOrders.length} placeholder="Search PO, vendor, item or status..." sortOptions={[{ value: 'newest', label: 'Newest PO' }, { value: 'vendor', label: 'Vendor A–Z' }, { value: 'amount_high', label: 'Amount high to low' }, { value: 'status', label: 'Status A–Z' }]} />
+
       {/* PO Master Table */}
       <div className="rounded-2xl border border-hotel-line bg-hotel-panel overflow-hidden">
         <div className="overflow-x-auto">
@@ -95,7 +107,7 @@ export const ProcurementPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-hotel-line">
-              {purchaseOrders.map((po) => (
+              {visibleOrders.map((po) => (
                 <tr key={po.id} className="hover:bg-[#f7f8f4] transition-colors">
                   <td className="py-3.5 px-4 font-mono font-medium text-hotel-accent">
                     {po.po_number}

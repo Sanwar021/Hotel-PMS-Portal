@@ -23,11 +23,13 @@ import { PageHeader } from '../../components/common/PageHeader';
 import { StatusBadge } from '../../components/common/StatusBadge';
 import { Modal } from '../../components/common/Modal';
 import { Reservation, Room, GuestFolio } from '../../types';
+import { SearchSortControls } from '../../components/common/SearchSortControls';
 
 export const FrontDeskPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'arrivals' | 'in_house' | 'departures'>('arrivals');
   const [search, setSearch] = useState('');
+  const [sort, setSort] = useState('arrival');
 
   // Modals state
   const [selectedRes, setSelectedRes] = useState<Reservation | null>(null);
@@ -244,14 +246,20 @@ export const FrontDeskPage: React.FC = () => {
     if (activeTab === 'in_house') list = inHouse;
     if (activeTab === 'departures') list = departures;
 
-    if (!search) return list;
-    return list.filter(
+    const filtered = !search ? list : list.filter(
       (r) =>
         r.reservation_number.toLowerCase().includes(search.toLowerCase()) ||
         r.guest?.first_name.toLowerCase().includes(search.toLowerCase()) ||
         r.guest?.last_name.toLowerCase().includes(search.toLowerCase()) ||
         r.room?.room_number.includes(search)
     );
+    return [...filtered].sort((a, b) => {
+      if (sort === 'guest') return `${a.guest?.first_name} ${a.guest?.last_name}`.localeCompare(`${b.guest?.first_name} ${b.guest?.last_name}`);
+      if (sort === 'room') return (a.room?.room_number || '').localeCompare(b.room?.room_number || '', undefined, { numeric: true });
+      if (sort === 'balance') return (b.total_amount - b.paid_amount) - (a.total_amount - a.paid_amount);
+      if (sort === 'departure') return a.check_out_date.localeCompare(b.check_out_date);
+      return a.check_in_date.localeCompare(b.check_in_date);
+    });
   };
 
   const currentList = getList();
@@ -313,16 +321,7 @@ export const FrontDeskPage: React.FC = () => {
           </button>
         </div>
 
-        <div className="relative w-full sm:w-64">
-          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-hotel-muted" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Filter by guest or room..."
-            className="w-full rounded-lg border border-hotel-line bg-white/[0.03] py-1.5 pl-8 pr-3 text-xs text-hotel-text focus:border-hotel-accent focus:outline-none"
-          />
-        </div>
+        <SearchSortControls compact search={search} onSearchChange={setSearch} sort={sort} onSortChange={setSort} resultCount={currentList.length} placeholder="Search guest, booking #, phone or room..." sortOptions={[{ value: 'arrival', label: 'Arrival date' }, { value: 'departure', label: 'Departure date' }, { value: 'guest', label: 'Guest name A–Z' }, { value: 'room', label: 'Room number' }, { value: 'balance', label: 'Balance high to low' }]} />
       </div>
 
       {/* Main Table View */}

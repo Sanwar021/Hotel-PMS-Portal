@@ -13,13 +13,23 @@ import {
 import { employeesApi } from '../../api/endpoints';
 import { PageHeader } from '../../components/common/PageHeader';
 import { StatusBadge } from '../../components/common/StatusBadge';
+import { SearchSortControls } from '../../components/common/SearchSortControls';
 
 export const EmployeesPage: React.FC = () => {
   const [departmentFilter, setDepartmentFilter] = useState('');
+  const [search, setSearch] = useState('');
+  const [sort, setSort] = useState('name');
 
   const { data: employees = [], isLoading } = useQuery({
     queryKey: ['employees', departmentFilter],
     queryFn: () => employeesApi.getEmployees({ department: departmentFilter }),
+  });
+
+  const visibleEmployees = employees.filter((employee) => `${employee.employee_code} ${employee.first_name} ${employee.last_name} ${employee.designation} ${employee.department} ${employee.email} ${employee.phone}`.toLowerCase().includes(search.toLowerCase())).sort((a, b) => {
+    if (sort === 'department') return a.department.localeCompare(b.department);
+    if (sort === 'salary_high') return b.salary - a.salary;
+    if (sort === 'code') return a.employee_code.localeCompare(b.employee_code);
+    return `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`);
   });
 
   return (
@@ -49,9 +59,11 @@ export const EmployeesPage: React.FC = () => {
         )}
       </div>
 
+      <SearchSortControls search={search} onSearchChange={setSearch} sort={sort} onSortChange={setSort} resultCount={visibleEmployees.length} placeholder="Search name, employee code, role or contact..." sortOptions={[{ value: 'name', label: 'Employee name A–Z' }, { value: 'department', label: 'Department A–Z' }, { value: 'code', label: 'Employee code' }, { value: 'salary_high', label: 'Salary high to low' }]} />
+
       {/* Staff Grid */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {employees.map((emp) => (
+        {visibleEmployees.map((emp) => (
           <div
             key={emp.id}
             className="flex flex-col justify-between rounded-2xl border border-hotel-line bg-hotel-panel p-5 hover:border-hotel-gold/30 hover:shadow-[0_10px_35px_rgba(0,0,0,0.5)] transition-all"

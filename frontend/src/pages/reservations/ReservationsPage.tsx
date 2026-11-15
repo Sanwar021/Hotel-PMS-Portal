@@ -16,11 +16,13 @@ import { PageHeader } from '../../components/common/PageHeader';
 import { StatusBadge } from '../../components/common/StatusBadge';
 import { Modal } from '../../components/common/Modal';
 import { Reservation } from '../../types';
+import { SearchSortControls } from '../../components/common/SearchSortControls';
 
 export const ReservationsPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [sort, setSort] = useState('arrival');
   const [selectedRes, setSelectedRes] = useState<Reservation | null>(null);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isVoucherModalOpen, setIsVoucherModalOpen] = useState(false);
@@ -29,6 +31,13 @@ export const ReservationsPage: React.FC = () => {
   const { data: reservations = [], isLoading } = useQuery({
     queryKey: ['reservations', statusFilter, search],
     queryFn: () => reservationsApi.getReservations({ status: statusFilter, search }),
+  });
+  const visibleReservations = [...reservations].sort((a, b) => {
+    if (sort === 'guest') return `${a.guest?.first_name} ${a.guest?.last_name}`.localeCompare(`${b.guest?.first_name} ${b.guest?.last_name}`);
+    if (sort === 'created') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    if (sort === 'amount') return b.total_amount - a.total_amount;
+    if (sort === 'status') return a.status.localeCompare(b.status);
+    return a.check_in_date.localeCompare(b.check_in_date);
   });
 
   const handleOpenCancel = (res: Reservation) => {
@@ -80,16 +89,7 @@ export const ReservationsPage: React.FC = () => {
           ))}
         </div>
 
-        <div className="relative w-full sm:w-72">
-          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-hotel-muted" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search booking # or guest name..."
-            className="w-full rounded-lg border border-hotel-line bg-white/[0.03] py-1.5 pl-8 pr-3 text-xs text-hotel-text focus:border-hotel-accent focus:outline-none"
-          />
-        </div>
+        <SearchSortControls compact search={search} onSearchChange={setSearch} sort={sort} onSortChange={setSort} resultCount={visibleReservations.length} placeholder="Search booking # or guest name..." sortOptions={[{ value: 'arrival', label: 'Arrival date' }, { value: 'created', label: 'Newest booking' }, { value: 'guest', label: 'Guest name A–Z' }, { value: 'amount', label: 'Amount high to low' }, { value: 'status', label: 'Status A–Z' }]} />
       </div>
 
       {/* Master Reservations Table */}
@@ -115,14 +115,14 @@ export const ReservationsPage: React.FC = () => {
                     Loading reservations...
                   </td>
                 </tr>
-              ) : reservations.length === 0 ? (
+              ) : visibleReservations.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-8 text-center text-xs text-hotel-muted">
                     No reservations matching filter.
                   </td>
                 </tr>
               ) : (
-                reservations.map((res) => (
+                visibleReservations.map((res) => (
                   <tr key={res.id} className="hover:bg-[#f7f8f4] transition-colors">
                     <td className="py-3.5 px-4 font-mono font-medium text-hotel-accent">
                       {res.reservation_number}

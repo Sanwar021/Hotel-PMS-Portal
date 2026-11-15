@@ -18,11 +18,13 @@ import { PageHeader } from '../../components/common/PageHeader';
 import { StatusBadge } from '../../components/common/StatusBadge';
 import { Modal } from '../../components/common/Modal';
 import { Guest, Reservation } from '../../types';
+import { SearchSortControls } from '../../components/common/SearchSortControls';
 
 export const GuestsPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [vipFilter, setVipFilter] = useState('');
+  const [sort, setSort] = useState('name');
   const [selectedGuest, setSelectedGuest] = useState<Guest | null>(null);
   const [guestHistory, setGuestHistory] = useState<Reservation[]>([]);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
@@ -43,6 +45,13 @@ export const GuestsPage: React.FC = () => {
   const { data: guests = [], isLoading } = useQuery({
     queryKey: ['guests', search, vipFilter],
     queryFn: () => guestsApi.getGuests({ search, vip: vipFilter }),
+  });
+  const visibleGuests = [...guests].sort((a, b) => {
+    if (sort === 'spent') return b.total_spent - a.total_spent;
+    if (sort === 'stays') return b.total_stays - a.total_stays;
+    if (sort === 'vip') return b.vip_status.localeCompare(a.vip_status);
+    if (sort === 'company') return (a.company_name || '').localeCompare(b.company_name || '');
+    return `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`);
   });
 
   const handleOpenHistory = async (guest: Guest) => {
@@ -111,16 +120,7 @@ export const GuestsPage: React.FC = () => {
           ))}
         </div>
 
-        <div className="relative w-full sm:w-72">
-          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-hotel-muted" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by name, company, email..."
-            className="w-full rounded-lg border border-hotel-line bg-white/[0.03] py-1.5 pl-8 pr-3 text-xs text-hotel-text focus:border-hotel-accent focus:outline-none"
-          />
-        </div>
+        <SearchSortControls compact search={search} onSearchChange={setSearch} sort={sort} onSortChange={setSort} resultCount={visibleGuests.length} placeholder="Search name, email, phone or company..." sortOptions={[{ value: 'name', label: 'Guest name A–Z' }, { value: 'spent', label: 'Lifetime spend high to low' }, { value: 'stays', label: 'Most stays' }, { value: 'vip', label: 'VIP tier' }, { value: 'company', label: 'Company A–Z' }]} />
       </div>
 
       {/* Guest Cards Directory */}
@@ -129,12 +129,12 @@ export const GuestsPage: React.FC = () => {
           <div className="col-span-full py-12 text-center text-xs text-hotel-muted">
             Loading guest directory...
           </div>
-        ) : guests.length === 0 ? (
+        ) : visibleGuests.length === 0 ? (
           <div className="col-span-full py-12 text-center text-xs text-hotel-muted">
             No guests found matching filters.
           </div>
         ) : (
-          guests.map((g) => (
+          visibleGuests.map((g) => (
             <div
               key={g.id}
               className="flex flex-col justify-between rounded-2xl border border-hotel-line bg-hotel-panel p-5 hover:border-hotel-gold/30 hover:shadow-[0_10px_35px_rgba(0,0,0,0.5)] transition-all"

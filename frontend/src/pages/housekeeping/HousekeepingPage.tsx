@@ -15,12 +15,15 @@ import { PageHeader } from '../../components/common/PageHeader';
 import { StatusBadge } from '../../components/common/StatusBadge';
 import { Modal } from '../../components/common/Modal';
 import { HousekeepingTask, RoomStatus } from '../../types';
+import { SearchSortControls } from '../../components/common/SearchSortControls';
 
 export const HousekeepingPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [selectedTask, setSelectedTask] = useState<HousekeepingTask | null>(null);
   const [isChecklistModalOpen, setIsChecklistModalOpen] = useState(false);
   const [checklistItems, setChecklistItems] = useState<{ item: string; done: boolean }[]>([]);
+  const [search, setSearch] = useState('');
+  const [sort, setSort] = useState('room');
 
   const { data: tasks = [], isLoading } = useQuery({
     queryKey: ['housekeeping'],
@@ -63,11 +66,17 @@ export const HousekeepingPage: React.FC = () => {
     }
   };
 
+  const priorityRank: Record<string, number> = { urgent: 0, high: 1, medium: 2, low: 3 };
+  const visibleTasks = tasks.filter((task) => `${task.room?.room_number || ''} ${task.task_type} ${task.priority} ${task.status} ${task.notes || ''}`.toLowerCase().includes(search.toLowerCase())).sort((a, b) => {
+    if (sort === 'priority') return (priorityRank[a.priority] ?? 9) - (priorityRank[b.priority] ?? 9);
+    if (sort === 'status') return a.status.localeCompare(b.status);
+    return (a.room?.room_number || '').localeCompare(b.room?.room_number || '', undefined, { numeric: true });
+  });
   // Group tasks by status columns
-  const dirtyTasks = tasks.filter((t) => t.status === 'dirty');
-  const cleaningTasks = tasks.filter((t) => t.status === 'cleaning');
-  const inspectedTasks = tasks.filter((t) => t.status === 'inspected');
-  const cleanTasks = tasks.filter((t) => t.status === 'available' || t.status === ('clean' as any));
+  const dirtyTasks = visibleTasks.filter((t) => t.status === 'dirty');
+  const cleaningTasks = visibleTasks.filter((t) => t.status === 'cleaning');
+  const inspectedTasks = visibleTasks.filter((t) => t.status === 'inspected');
+  const cleanTasks = visibleTasks.filter((t) => t.status === 'available' || t.status === ('clean' as any));
 
   return (
     <div className="space-y-6">
@@ -76,6 +85,8 @@ export const HousekeepingPage: React.FC = () => {
         title="Housekeeping Workflow"
         description="Manage live room turnovers, supervise cleaning checklists, and release clean rooms to the Front Desk inventory in real time."
       />
+
+      <SearchSortControls search={search} onSearchChange={setSearch} sort={sort} onSortChange={setSort} resultCount={visibleTasks.length} placeholder="Search room, task, priority or notes..." sortOptions={[{ value: 'room', label: 'Room number' }, { value: 'priority', label: 'Priority: urgent first' }, { value: 'status', label: 'Workflow status' }]} />
 
       {/* 4-Stage Kanban Board */}
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-4">

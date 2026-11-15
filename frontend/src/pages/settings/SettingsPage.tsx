@@ -14,10 +14,13 @@ import {
 import { settingsApi } from '../../api/endpoints';
 import { PageHeader } from '../../components/common/PageHeader';
 import { Hotel, AuditLogItem } from '../../types';
+import { SearchSortControls } from '../../components/common/SearchSortControls';
 
 export const SettingsPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'hotel' | 'audit'>('hotel');
+  const [auditSearch, setAuditSearch] = useState('');
+  const [auditSort, setAuditSort] = useState('newest');
 
   const { data: hotel, isLoading } = useQuery({
     queryKey: ['hotel_settings'],
@@ -29,6 +32,7 @@ export const SettingsPage: React.FC = () => {
     queryFn: settingsApi.getAuditLogs,
     enabled: activeTab === 'audit',
   });
+  const visibleAuditLogs = auditLogs.filter((log) => `${log.action} ${log.entity_type} ${log.entity_id} ${log.details} ${log.user?.username || 'system'}`.toLowerCase().includes(auditSearch.toLowerCase())).sort((a, b) => auditSort === 'oldest' ? new Date(a.created_at).getTime() - new Date(b.created_at).getTime() : auditSort === 'actor' ? (a.user?.username || 'System').localeCompare(b.user?.username || 'System') : auditSort === 'action' ? a.action.localeCompare(b.action) : new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   const [form, setForm] = useState({
     name: '',
@@ -231,6 +235,7 @@ export const SettingsPage: React.FC = () => {
             <h3 className="font-serif text-lg font-bold text-hotel-text">
               Real-Time Audit Trail
             </h3>
+            <div className="mt-4"><SearchSortControls compact search={auditSearch} onSearchChange={setAuditSearch} sort={auditSort} onSortChange={setAuditSort} resultCount={visibleAuditLogs.length} placeholder="Search action, entity, actor or details..." sortOptions={[{ value: 'newest', label: 'Newest activity' }, { value: 'oldest', label: 'Oldest activity' }, { value: 'actor', label: 'Actor A–Z' }, { value: 'action', label: 'Action A–Z' }]} /></div>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
@@ -244,14 +249,14 @@ export const SettingsPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-hotel-line">
-                {auditLogs.length === 0 ? (
+                {visibleAuditLogs.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="py-8 text-center text-xs text-hotel-muted">
                       No security audit events recorded.
                     </td>
                   </tr>
                 ) : (
-                  auditLogs.map((log) => (
+                  visibleAuditLogs.map((log) => (
                     <tr key={log.id} className="hover:bg-[#f7f8f4] transition-colors">
                       <td className="py-3 px-4 text-hotel-muted">{log.created_at}</td>
                       <td className="py-3 px-4 font-semibold text-hotel-accent uppercase text-[10px]">
