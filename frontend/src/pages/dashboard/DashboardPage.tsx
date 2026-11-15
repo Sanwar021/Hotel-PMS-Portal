@@ -54,7 +54,7 @@ export const DashboardPage: React.FC = () => {
 
   const { stats, revenue_trend, source_breakdown, recent_reservations, upcoming_arrivals, upcoming_departures } = data;
 
-  const COLORS = ['#ef8f31', '#d8a855', '#10b981', '#38bdf8', '#a855f7', '#f43f5e'];
+  const COLORS = ['#a9752e', '#b7893e', '#3f846c', '#568294', '#826a96', '#b95f55'];
 
   return (
     <div className="space-y-8">
@@ -230,8 +230,8 @@ export const DashboardPage: React.FC = () => {
               <AreaChart data={revenue_trend}>
                 <defs>
                   <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#ef8f31" stopOpacity={0.35} />
-                    <stop offset="95%" stopColor="#ef8f31" stopOpacity={0} />
+                    <stop offset="5%" stopColor="#a9752e" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#a9752e" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <XAxis dataKey="date" stroke="#a49a8f" fontSize={11} tickLine={false} />
@@ -243,18 +243,18 @@ export const DashboardPage: React.FC = () => {
                 />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#1f1b17',
-                    border: '1px solid rgba(255,255,255,0.1)',
+                    backgroundColor: '#fffefb',
+                    color: '#20352f',
+                    border: '1px solid #d8ded9',
                     borderRadius: '8px',
                     fontSize: '11px',
-                    color: '#f5eee4',
                   }}
                   formatter={(val: any) => [`${Number(val).toLocaleString()} BDT`, 'Revenue']}
                 />
                 <Area
                   type="monotone"
                   dataKey="revenue"
-                  stroke="#ef8f31"
+                  stroke="#a9752e"
                   strokeWidth={2}
                   fillOpacity={1}
                   fill="url(#revenueGrad)"
@@ -292,11 +292,11 @@ export const DashboardPage: React.FC = () => {
                 </Pie>
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#1f1b17',
-                    border: '1px solid rgba(255,255,255,0.1)',
+                    backgroundColor: '#fffefb',
+                    color: '#20352f',
+                    border: '1px solid #d8ded9',
                     borderRadius: '8px',
                     fontSize: '11px',
-                    color: '#f5eee4',
                   }}
                 />
               </PieChart>

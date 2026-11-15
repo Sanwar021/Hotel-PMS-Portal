@@ -125,7 +125,7 @@ export const HousekeepingPage: React.FC = () => {
                   </button>
                   <button
                     onClick={() => handleAdvanceStatus(task, 'cleaning')}
-                    className="inline-flex items-center gap-1 rounded-md bg-amber-500 px-2.5 py-1 text-[10px] font-bold text-[#14110f] hover:bg-amber-400 transition-colors"
+                    className="inline-flex items-center gap-1 rounded-md bg-[#a9752e] px-2.5 py-1 text-[10px] font-bold text-white shadow-sm transition-colors hover:bg-[#8f6125]"
                   >
                     <span>Start Cleaning</span>
                     <ArrowRight className="h-3 w-3" />
@@ -173,7 +173,7 @@ export const HousekeepingPage: React.FC = () => {
                   </button>
                   <button
                     onClick={() => handleAdvanceStatus(task, 'inspected')}
-                    className="inline-flex items-center gap-1 rounded-md bg-yellow-500 px-2.5 py-1 text-[10px] font-bold text-[#14110f] hover:bg-yellow-400 transition-colors"
+                    className="inline-flex items-center gap-1 rounded-md bg-[#9b7a36] px-2.5 py-1 text-[10px] font-bold text-white shadow-sm transition-colors hover:bg-[#80632c]"
                   >
                     <span>Submit for Inspection</span>
                     <ArrowRight className="h-3 w-3" />

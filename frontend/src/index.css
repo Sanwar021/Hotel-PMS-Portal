@@ -1,15 +1,15 @@
 @import "tailwindcss";
 
 @theme {
-  --color-hotel-bg: #f3f3ed;
+  --color-hotel-bg: #f4f3ee;
   --color-hotel-panel: #fffefb;
-  --color-hotel-panel2: #f7f7f1;
-  --color-hotel-surface: #edf2ed;
-  --color-hotel-line: #dbe1dc;
-  --color-hotel-text: #163f35;
-  --color-hotel-muted: #6f8079;
-  --color-hotel-accent: #b68a35;
-  --color-hotel-gold: #c6a456;
+  --color-hotel-panel2: #f8f7f3;
+  --color-hotel-surface: #eef1ed;
+  --color-hotel-line: #d8ded9;
+  --color-hotel-text: #20352f;
+  --color-hotel-muted: #65756f;
+  --color-hotel-accent: #a9752e;
+  --color-hotel-gold: #b7893e;
   --color-hotel-ink: #112631;
   --color-hotel-deep: #07161d;
   --color-hotel-deep2: #173542;
@@ -21,14 +21,14 @@
 }
 
 :root {
-  --admin-bg: #f3f3ed;
+  --admin-bg: #f4f3ee;
   --admin-panel: #fffefb;
-  --admin-panel2: #f7f7f1;
-  --admin-line: #dbe1dc;
-  --admin-text: #163f35;
-  --admin-muted: #6f8079;
-  --admin-accent: #b68a35;
-  --admin-gold: #c6a456;
+  --admin-panel2: #f8f7f3;
+  --admin-line: #d8ded9;
+  --admin-text: #20352f;
+  --admin-muted: #65756f;
+  --admin-accent: #a9752e;
+  --admin-gold: #b7893e;
 }
 
 body {
@@ -120,8 +120,47 @@ textarea {
 }
 
 .admin-shell main > div > [class*="rounded-"] {
-  box-shadow: 0 10px 35px rgba(19, 70, 57, 0.045);
+  box-shadow: 0 10px 35px rgba(29, 47, 41, 0.045);
 }
+
+/* Semantic light-mode compatibility for legacy dark status utilities. */
+.admin-shell [class*="bg-emerald-950"],
+.admin-shell [class*="bg-emerald-900"] { background-color: #e7f1ec !important; }
+.admin-shell [class*="text-emerald-300"],
+.admin-shell [class*="text-emerald-400"] { color: #2f6b58 !important; }
+.admin-shell [class*="border-emerald-500"] { border-color: #b4d0c2 !important; }
+.admin-shell [class*="bg-teal-950"] { background-color: #e8f0ed !important; }
+.admin-shell [class*="text-teal-300"],
+.admin-shell [class*="text-teal-400"] { color: #356a5c !important; }
+.admin-shell [class*="border-teal-500"] { border-color: #b8cec6 !important; }
+.admin-shell [class*="bg-amber-950"],
+.admin-shell [class*="bg-yellow-950"] { background-color: #f8efdc !important; }
+.admin-shell [class*="text-amber-300"],
+.admin-shell [class*="text-amber-400"],
+.admin-shell [class*="text-yellow-300"],
+.admin-shell [class*="text-yellow-400"] { color: #75571f !important; }
+.admin-shell [class*="border-amber-500"],
+.admin-shell [class*="border-yellow-500"] { border-color: #dfc991 !important; }
+.admin-shell [class*="bg-rose-950"] { background-color: #f7e9e7 !important; }
+.admin-shell [class*="text-rose-300"],
+.admin-shell [class*="text-rose-400"] { color: #8a4039 !important; }
+.admin-shell [class*="border-rose-500"] { border-color: #e1b9b5 !important; }
+.admin-shell [class*="bg-stone-900"],
+.admin-shell [class*="bg-slate-900"] { background-color: #eef1ef !important; }
+.admin-shell [class*="text-stone-300"],
+.admin-shell [class*="text-stone-400"],
+.admin-shell [class*="text-slate-300"] { color: #53635d !important; }
+
+.admin-shell button[class*="bg-emerald-950"],
+.admin-shell button[class*="bg-emerald-900"],
+.admin-shell button[class*="bg-teal-500"] {
+  background-color: #326f5c !important;
+  border-color: #326f5c !important;
+  color: #fffefb !important;
+}
+.admin-shell button[class*="bg-emerald-950"]:hover,
+.admin-shell button[class*="bg-emerald-900"]:hover,
+.admin-shell button[class*="bg-teal-500"]:hover { background-color: #285c4d !important; }
 
 .admin-shell input,
 .admin-shell textarea,

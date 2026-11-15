@@ -8,179 +8,48 @@ interface StatusBadgeProps {
   size?: 'sm' | 'md';
 }
 
-export const StatusBadge: React.FC<StatusBadgeProps> = ({
-  status,
-  type = 'generic',
-  size = 'md',
-}) => {
-  const getBadgeConfig = () => {
-    const s = String(status).toLowerCase();
+const tones = {
+  success: 'border-[#b8d3c6] bg-[#e7f1ec] text-[#285f4e] before:bg-[#3f846c]',
+  info: 'border-[#bdccd4] bg-[#eaf0f3] text-[#345d6b] before:bg-[#568294]',
+  warning: 'border-[#dfc991] bg-[#f8efdc] text-[#74551d] before:bg-[#b9872e]',
+  danger: 'border-[#e1b9b5] bg-[#f7e9e7] text-[#8a4039] before:bg-[#b95f55]',
+  violet: 'border-[#cec4d8] bg-[#f0ecf3] text-[#654e76] before:bg-[#826a96]',
+  neutral: 'border-[#ccd3cf] bg-[#eef1ef] text-[#53635d] before:bg-[#778680]',
+};
 
-    // Room Statuses
-    if (s === 'available' || s === 'clean') {
-      return {
-        label: 'Available',
-        bg: 'bg-emerald-950/60',
-        text: 'text-emerald-400',
-        border: 'border-emerald-500/30',
-        dot: 'bg-emerald-400',
-      };
-    }
-    if (s === 'occupied') {
-      return {
-        label: 'Occupied',
-        bg: 'bg-purple-950/60',
-        text: 'text-purple-300',
-        border: 'border-purple-500/30',
-        dot: 'bg-purple-400',
-      };
-    }
-    if (s === 'reserved') {
-      return {
-        label: 'Reserved',
-        bg: 'bg-sky-950/60',
-        text: 'text-sky-300',
-        border: 'border-sky-500/30',
-        dot: 'bg-sky-400',
-      };
-    }
-    if (s === 'dirty') {
-      return {
-        label: 'Dirty',
-        bg: 'bg-amber-950/60',
-        text: 'text-amber-400',
-        border: 'border-amber-500/30',
-        dot: 'bg-amber-400',
-      };
-    }
-    if (s === 'cleaning') {
-      return {
-        label: 'Cleaning',
-        bg: 'bg-yellow-950/60',
-        text: 'text-yellow-400',
-        border: 'border-yellow-500/30',
-        dot: 'bg-yellow-400',
-      };
-    }
-    if (s === 'inspected') {
-      return {
-        label: 'Inspected',
-        bg: 'bg-teal-950/60',
-        text: 'text-teal-300',
-        border: 'border-teal-500/30',
-        dot: 'bg-teal-400',
-      };
-    }
-    if (s === 'maintenance') {
-      return {
-        label: 'Maintenance',
-        bg: 'bg-rose-950/60',
-        text: 'text-rose-400',
-        border: 'border-rose-500/30',
-        dot: 'bg-rose-400',
-      };
-    }
-    if (s === 'out_of_order') {
-      return {
-        label: 'Out of Order',
-        bg: 'bg-stone-900',
-        text: 'text-stone-400',
-        border: 'border-stone-700',
-        dot: 'bg-stone-500',
-      };
-    }
+const labels: Record<string, string> = {
+  available: 'Available', clean: 'Available', occupied: 'Occupied', reserved: 'Reserved',
+  dirty: 'Dirty', cleaning: 'Cleaning', inspected: 'Inspected', maintenance: 'Maintenance',
+  out_of_order: 'Out of Order', confirmed: 'Confirmed', checked_in: 'Checked In',
+  checked_out: 'Checked Out', cancelled: 'Cancelled', no_show: 'No Show', pending: 'Pending',
+  paid: 'Paid', partially_paid: 'Partially Paid', issued: 'Issued', void: 'Void',
+  reported: 'Reported', in_progress: 'In Progress', on_hold: 'On Hold', completed: 'Completed',
+  placed: 'Placed', preparing: 'Preparing', ready: 'Ready', served: 'Served',
+  charged_to_room: 'Charged to Room', draft: 'Draft', pending_approval: 'Pending Approval',
+  approved: 'Approved', ordered: 'Ordered', received: 'Received', active: 'Active',
+  platinum: 'VIP Platinum', gold: 'VIP Gold', silver: 'VIP Silver', none: 'Standard',
+};
 
-    // Reservation Statuses
-    if (s === 'confirmed') {
-      return {
-        label: 'Confirmed',
-        bg: 'bg-emerald-950/60',
-        text: 'text-emerald-400',
-        border: 'border-emerald-500/30',
-        dot: 'bg-emerald-400',
-      };
-    }
-    if (s === 'checked_in') {
-      return {
-        label: 'Checked In',
-        bg: 'bg-indigo-950/60',
-        text: 'text-indigo-300',
-        border: 'border-indigo-500/30',
-        dot: 'bg-indigo-400',
-      };
-    }
-    if (s === 'checked_out') {
-      return {
-        label: 'Checked Out',
-        bg: 'bg-stone-900',
-        text: 'text-stone-400',
-        border: 'border-stone-700',
-        dot: 'bg-stone-400',
-      };
-    }
-    if (s === 'cancelled') {
-      return {
-        label: 'Cancelled',
-        bg: 'bg-rose-950/60',
-        text: 'text-rose-400',
-        border: 'border-rose-500/30',
-        dot: 'bg-rose-400',
-      };
-    }
+function toneFor(status: string) {
+  if (['available', 'clean', 'confirmed', 'paid', 'completed', 'approved', 'received', 'active', 'ready'].includes(status)) return tones.success;
+  if (['occupied', 'checked_in', 'in_progress', 'preparing', 'served', 'charged_to_room'].includes(status)) return tones.info;
+  if (['dirty', 'reported', 'partially_paid', 'pending', 'issued', 'draft', 'pending_approval', 'ordered', 'placed'].includes(status)) return tones.warning;
+  if (['maintenance', 'out_of_order', 'cancelled', 'no_show', 'void', 'failed'].includes(status)) return tones.danger;
+  if (['platinum', 'gold'].includes(status)) return tones.violet;
+  return tones.neutral;
+}
 
-    // VIP Statuses
-    if (s === 'platinum') {
-      return {
-        label: 'VIP Platinum',
-        bg: 'bg-purple-950/80',
-        text: 'text-purple-300',
-        border: 'border-purple-400/40',
-        dot: 'bg-purple-400',
-      };
-    }
-    if (s === 'gold') {
-      return {
-        label: 'VIP Gold',
-        bg: 'bg-amber-950/80',
-        text: 'text-amber-300',
-        border: 'border-amber-400/40',
-        dot: 'bg-amber-400',
-      };
-    }
-    if (s === 'silver') {
-      return {
-        label: 'VIP Silver',
-        bg: 'bg-slate-900',
-        text: 'text-slate-300',
-        border: 'border-slate-500/40',
-        dot: 'bg-slate-400',
-      };
-    }
-
-    return {
-      label: s.replace(/_/g, ' '),
-      bg: 'bg-stone-900',
-      text: 'text-stone-300',
-      border: 'border-stone-700',
-      dot: 'bg-stone-400',
-    };
-  };
-
-  const config = getBadgeConfig();
-
+export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, size = 'md' }) => {
+  const normalized = String(status).toLowerCase();
   return (
     <span
       className={clsx(
-        'inline-flex items-center gap-1.5 rounded-full border font-medium capitalize transition-colors',
-        config.bg,
-        config.text,
-        config.border,
-        size === 'sm' ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-1 text-xs'
+        'inline-flex items-center gap-1.5 rounded-full border font-semibold capitalize leading-none before:h-1.5 before:w-1.5 before:shrink-0 before:rounded-full before:content-[""]',
+        toneFor(normalized),
+        size === 'sm' ? 'px-2.5 py-1 text-[10px]' : 'px-3 py-1.5 text-xs'
       )}
     >
-      <span className={clsx('h-1.5 w-1.5 rounded-full', config.dot)} />
-      {config.label}
+      {labels[normalized] ?? normalized.replace(/_/g, ' ')}
     </span>
   );
 };
-
