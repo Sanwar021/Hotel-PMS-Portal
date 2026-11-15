@@ -37,22 +37,31 @@ export const authApi = {
 export const dashboardApi = {
   getStats: async (): Promise<DashboardData> => {
     const res = await apiClient.get('/dashboard/stats');
-    return res.data;
+    const data = res.data;
+    return {
+      ...data,
+      revenue_trend: data.revenue_trend ?? [],
+      source_breakdown: data.source_breakdown ?? [],
+      recent_reservations: data.recent_reservations ?? [],
+      upcoming_arrivals: data.upcoming_arrivals ?? [],
+      upcoming_departures: data.upcoming_departures ?? [],
+      notifications: data.notifications ?? [],
+    };
   },
 };
 
 export const roomsApi = {
   getRooms: async (params?: { status?: string; floor_id?: string; room_type_id?: string }): Promise<Room[]> => {
     const res = await apiClient.get('/rooms', { params });
-    return res.data.rooms;
+    return res.data.rooms ?? [];
   },
   getRoomTypes: async (): Promise<RoomType[]> => {
     const res = await apiClient.get('/room-types');
-    return res.data.room_types;
+    return res.data.room_types ?? [];
   },
   getFloors: async (): Promise<Floor[]> => {
     const res = await apiClient.get('/floors');
-    return res.data.floors;
+    return res.data.floors ?? [];
   },
   createRoom: async (data: any): Promise<Room> => {
     const res = await apiClient.post('/rooms', data);
@@ -67,7 +76,7 @@ export const roomsApi = {
 export const reservationsApi = {
   getReservations: async (params?: { status?: string; search?: string; from_date?: string; to_date?: string }): Promise<Reservation[]> => {
     const res = await apiClient.get('/reservations', { params });
-    return res.data.reservations;
+    return res.data.reservations ?? [];
   },
   getReservationById: async (id: string): Promise<{ reservation: Reservation; folio: GuestFolio | null }> => {
     const res = await apiClient.get(`/reservations/${id}`);
@@ -83,22 +92,22 @@ export const reservationsApi = {
   },
   getCalendarTimeline: async (): Promise<any[]> => {
     const res = await apiClient.get('/reservations/calendar');
-    return res.data.timeline;
+    return res.data.timeline ?? [];
   },
 };
 
 export const frontdeskApi = {
   getArrivals: async (): Promise<Reservation[]> => {
     const res = await apiClient.get('/frontdesk/arrivals');
-    return res.data.arrivals;
+    return res.data.arrivals ?? [];
   },
   getDepartures: async (): Promise<Reservation[]> => {
     const res = await apiClient.get('/frontdesk/departures');
-    return res.data.departures;
+    return res.data.departures ?? [];
   },
   getInHouse: async (): Promise<Reservation[]> => {
     const res = await apiClient.get('/frontdesk/in-house');
-    return res.data.in_house;
+    return res.data.in_house ?? [];
   },
   checkIn: async (data: { reservation_id: string; room_id?: string; deposit_amount?: number; payment_method?: string; identity_verified?: boolean; notes?: string }) => {
     const res = await apiClient.post('/frontdesk/check-in', data);
@@ -117,11 +126,11 @@ export const frontdeskApi = {
 export const guestsApi = {
   getGuests: async (params?: { search?: string; vip?: string }): Promise<Guest[]> => {
     const res = await apiClient.get('/guests', { params });
-    return res.data.guests;
+    return res.data.guests ?? [];
   },
   getGuestById: async (id: string): Promise<{ guest: Guest; reservations: Reservation[] }> => {
     const res = await apiClient.get(`/guests/${id}`);
-    return res.data;
+    return { ...res.data, reservations: res.data.reservations ?? [] };
   },
   createGuest: async (data: any): Promise<Guest> => {
     const res = await apiClient.post('/guests', data);
@@ -136,7 +145,7 @@ export const guestsApi = {
 export const housekeepingApi = {
   getTasks: async (params?: { status?: string; priority?: string }): Promise<HousekeepingTask[]> => {
     const res = await apiClient.get('/housekeeping/tasks', { params });
-    return res.data.tasks;
+    return res.data.tasks ?? [];
   },
   createTask: async (data: any): Promise<HousekeepingTask> => {
     const res = await apiClient.post('/housekeeping/tasks', data);
@@ -151,15 +160,15 @@ export const housekeepingApi = {
 export const restaurantApi = {
   getTables: async (): Promise<RestaurantTable[]> => {
     const res = await apiClient.get('/restaurant/tables');
-    return res.data.tables;
+    return res.data.tables ?? [];
   },
   getMenu: async (): Promise<MenuCategory[]> => {
     const res = await apiClient.get('/restaurant/menu');
-    return res.data.categories;
+    return res.data.categories ?? [];
   },
   getOrders: async (params?: { status?: string }): Promise<RestaurantOrder[]> => {
     const res = await apiClient.get('/restaurant/orders', { params });
-    return res.data.orders;
+    return res.data.orders ?? [];
   },
   createOrder: async (data: any): Promise<RestaurantOrder> => {
     const res = await apiClient.post('/restaurant/orders', data);
@@ -186,7 +195,7 @@ export const billingApi = {
   },
   getInvoices: async (params?: { status?: string }): Promise<Invoice[]> => {
     const res = await apiClient.get('/billing/invoices', { params });
-    return res.data.invoices;
+    return res.data.invoices ?? [];
   },
   getInvoiceById: async (id: string): Promise<{ invoice: Invoice; hotel: Hotel }> => {
     const res = await apiClient.get(`/billing/invoices/${id}`);
@@ -197,7 +206,7 @@ export const billingApi = {
 export const inventoryApi = {
   getItems: async (params?: { category?: string; low_stock?: string }): Promise<InventoryItem[]> => {
     const res = await apiClient.get('/inventory/items', { params });
-    return res.data.items;
+    return res.data.items ?? [];
   },
   adjustStock: async (data: { item_id: string; type: string; quantity: number; reason?: string; department?: string }) => {
     const res = await apiClient.post('/inventory/adjust', data);
@@ -205,11 +214,11 @@ export const inventoryApi = {
   },
   getSuppliers: async (): Promise<Supplier[]> => {
     const res = await apiClient.get('/procurement/suppliers');
-    return res.data.suppliers;
+    return res.data.suppliers ?? [];
   },
   getPurchaseOrders: async (): Promise<PurchaseOrder[]> => {
     const res = await apiClient.get('/procurement/orders');
-    return res.data.purchase_orders;
+    return res.data.purchase_orders ?? [];
   },
   createPO: async (data: any): Promise<PurchaseOrder> => {
     const res = await apiClient.post('/procurement/orders', data);
@@ -224,7 +233,7 @@ export const inventoryApi = {
 export const maintenanceApi = {
   getRequests: async (params?: { status?: string }): Promise<MaintenanceRequest[]> => {
     const res = await apiClient.get('/maintenance', { params });
-    return res.data.requests;
+    return res.data.requests ?? [];
   },
   createRequest: async (data: any): Promise<MaintenanceRequest> => {
     const res = await apiClient.post('/maintenance', data);
@@ -239,11 +248,11 @@ export const maintenanceApi = {
 export const employeesApi = {
   getEmployees: async (params?: { department?: string }): Promise<Employee[]> => {
     const res = await apiClient.get('/employees', { params });
-    return res.data.employees;
+    return res.data.employees ?? [];
   },
   getShifts: async (): Promise<Shift[]> => {
     const res = await apiClient.get('/employees/shifts');
-    return res.data.shifts;
+    return res.data.shifts ?? [];
   },
 };
 
@@ -265,11 +274,11 @@ export const settingsApi = {
   },
   getAuditLogs: async (): Promise<AuditLogItem[]> => {
     const res = await apiClient.get('/settings/audit-logs');
-    return res.data.audit_logs;
+    return res.data.audit_logs ?? [];
   },
   getNotifications: async (): Promise<NotificationItem[]> => {
     const res = await apiClient.get('/notifications');
-    return res.data.notifications;
+    return res.data.notifications ?? [];
   },
   markNotificationRead: async (id: string) => {
     const res = await apiClient.patch(`/notifications/${id}/read`);

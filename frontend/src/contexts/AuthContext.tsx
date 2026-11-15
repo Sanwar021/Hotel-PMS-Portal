@@ -14,11 +14,20 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const getStoredUser = (): User | null => {
+  const saved = localStorage.getItem('hotelos_user');
+  if (!saved) return null;
+  try {
+    return JSON.parse(saved) as User;
+  } catch {
+    localStorage.removeItem('hotelos_user');
+    localStorage.removeItem('hotelos_token');
+    return null;
+  }
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(() => {
-    const saved = localStorage.getItem('hotelos_user');
-    return saved ? JSON.parse(saved) : null;
-  });
+  const [user, setUser] = useState<User | null>(getStoredUser);
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('hotelos_token'));
   const [isLoading, setIsLoading] = useState<boolean>(true);
 

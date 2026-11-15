@@ -140,31 +140,31 @@ func GetDashboardStats(c *gin.Context) {
 	}
 
 	// Source breakdown
-	var sources []SourceBreakdown
+	sources := make([]SourceBreakdown, 0)
 	db.Model(&models.Reservation{}).
 		Select("booking_source as source, count(*) as count").
 		Group("booking_source").
 		Scan(&sources)
 
 	// Recent Reservations
-	var recentRes []models.Reservation
+	recentRes := make([]models.Reservation, 0)
 	db.Preload("Guest").Preload("Room").Preload("RoomType").
 		Order("created_at desc").Limit(8).Find(&recentRes)
 
 	// Upcoming Arrivals
-	var arrivals []models.Reservation
+	arrivals := make([]models.Reservation, 0)
 	db.Preload("Guest").Preload("RoomType").
 		Where("check_in_date >= ? AND status = ?", todayStart, models.ResConfirmed).
 		Order("check_in_date asc").Limit(6).Find(&arrivals)
 
 	// Upcoming Departures
-	var departures []models.Reservation
+	departures := make([]models.Reservation, 0)
 	db.Preload("Guest").Preload("Room").
 		Where("check_out_date >= ? AND status = ?", todayStart, models.ResCheckedIn).
 		Order("check_out_date asc").Limit(6).Find(&departures)
 
 	// System Notifications
-	var notifications []models.Notification
+	notifications := make([]models.Notification, 0)
 	db.Order("created_at desc").Limit(5).Find(&notifications)
 
 	c.JSON(http.StatusOK, gin.H{
