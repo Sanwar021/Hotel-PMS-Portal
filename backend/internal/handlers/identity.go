@@ -24,10 +24,11 @@ type NIDParseResult struct {
 }
 
 var (
-	nidNumberPattern = regexp.MustCompile(`(?i)(?:national\s*id|nid|id\s*no|no\.?|number)?\s*[:#-]?\s*([0-9][0-9\s-]{8,20}[0-9])`)
-	namePattern      = regexp.MustCompile(`(?i)^(?:name|নাম)\s*[:：-]\s*(.+)$`)
-	birthPattern     = regexp.MustCompile(`(?i)(?:date\s*of\s*birth|birth|dob|জন্ম\s*তারিখ)\s*[:：-]?\s*([0-9]{1,2}[./-][0-9]{1,2}[./-][0-9]{4}|[0-9]{4}[./-][0-9]{1,2}[./-][0-9]{1,2})`)
-	addressPattern   = regexp.MustCompile(`(?i)^(?:address|ঠিকানা)\s*[:：-]\s*(.+)$`)
+	nidNumberPattern     = regexp.MustCompile(`(?i)(?:national\s*id|nid|id\s*(?:no|number)|nid\s*no)\.?\s*[:#-]?\s*([0-9][0-9\s-]{8,20}[0-9])`)
+	standaloneNIDPattern = regexp.MustCompile(`(?:^|[^0-9])([0-9]{10}|[0-9]{13}|[0-9]{17})(?:[^0-9]|$)`)
+	namePattern          = regexp.MustCompile(`(?i)^(?:name|নাম)\s*[:：-]\s*(.+)$`)
+	birthPattern         = regexp.MustCompile(`(?i)(?:date\s*of\s*birth|birth|dob|জন্ম\s*তারিখ)\s*[:：-]?\s*([0-9]{1,2}[./-][0-9]{1,2}[./-][0-9]{4}|[0-9]{4}[./-][0-9]{1,2}[./-][0-9]{1,2})`)
+	addressPattern       = regexp.MustCompile(`(?i)^(?:address|ঠিকানা)\s*[:：-]\s*(.+)$`)
 )
 
 func ParseNIDText(c *gin.Context) {
@@ -45,6 +46,11 @@ func ParseNIDText(c *gin.Context) {
 		result.IDNumber = digitsOnly(match[1])
 		if len(result.IDNumber) != 10 && len(result.IDNumber) != 13 && len(result.IDNumber) != 17 {
 			result.Warnings = append(result.Warnings, "Review the extracted NID number")
+		}
+	}
+	if result.IDNumber == "" {
+		if match := standaloneNIDPattern.FindStringSubmatch(text); len(match) > 1 {
+			result.IDNumber = match[1]
 		}
 	}
 
