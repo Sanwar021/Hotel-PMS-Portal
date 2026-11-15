@@ -27,6 +27,7 @@ type Config struct {
 	BootstrapAdminPassword string
 	BootstrapHotelName     string
 	BootstrapHotelCode     string
+	FrontendDistDir        string
 }
 
 func (c *Config) ValidateProduction() error {
@@ -77,6 +78,7 @@ func LoadConfig() *Config {
 		BootstrapAdminPassword: getEnv("BOOTSTRAP_ADMIN_PASSWORD", ""),
 		BootstrapHotelName:     getEnv("BOOTSTRAP_HOTEL_NAME", ""),
 		BootstrapHotelCode:     getEnv("BOOTSTRAP_HOTEL_CODE", ""),
+		FrontendDistDir:        getEnv("FRONTEND_DIST_DIR", ""),
 	}
 }
 

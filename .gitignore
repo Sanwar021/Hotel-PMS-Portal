@@ -24,6 +24,7 @@ coverage/
 *.dll
 *.so
 *.dylib
+hotelos-api
 
 # Editor and operating-system files
 .vscode/

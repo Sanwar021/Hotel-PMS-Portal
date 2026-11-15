@@ -3,6 +3,9 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"hotelos/backend/internal/config"
 	"hotelos/backend/internal/database"
@@ -55,6 +58,23 @@ func main() {
 			"version": "1.0.0",
 		})
 	})
+
+	if cfg.FrontendDistDir != "" {
+		assetsDir := filepath.Join(cfg.FrontendDistDir, "assets")
+		router.Static("/assets", assetsDir)
+		router.NoRoute(func(c *gin.Context) {
+			if c.Request.Method != http.MethodGet || strings.HasPrefix(c.Request.URL.Path, "/api/") || c.Request.URL.Path == "/ws" || c.Request.URL.Path == "/health" {
+				c.JSON(http.StatusNotFound, gin.H{"error": "Route not found"})
+				return
+			}
+			indexPath := filepath.Join(cfg.FrontendDistDir, "index.html")
+			if _, err := os.Stat(indexPath); err != nil {
+				c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Frontend build is unavailable"})
+				return
+			}
+			c.File(indexPath)
+		})
+	}
 
 	// WebSocket Endpoint
 	router.GET("/ws", func(c *gin.Context) {
