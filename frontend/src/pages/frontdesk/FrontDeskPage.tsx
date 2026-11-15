@@ -12,8 +12,13 @@ import {
   User,
   Clock,
   Sparkles,
+  ScanLine,
+  Upload,
+  Loader2,
+  ShieldCheck,
 } from 'lucide-react';
-import { frontdeskApi, roomsApi, billingApi } from '../../api/endpoints';
+import { createWorker } from 'tesseract.js';
+import { frontdeskApi, roomsApi, billingApi, identityApi, reservationsApi, ParsedNIDIdentity } from '../../api/endpoints';
 import { PageHeader } from '../../components/common/PageHeader';
 import { StatusBadge } from '../../components/common/StatusBadge';
 import { Modal } from '../../components/common/Modal';
@@ -39,6 +44,12 @@ export const FrontDeskPage: React.FC = () => {
   const [paymentMethod, setPaymentMethod] = useState('credit_card');
   const [newRoomId, setNewRoomId] = useState('');
   const [transferReason, setTransferReason] = useState('');
+  const [identityVerified, setIdentityVerified] = useState(false);
+  const [scannerText, setScannerText] = useState('');
+  const [scanProgress, setScanProgress] = useState('');
+  const [scanWarnings, setScanWarnings] = useState<string[]>([]);
+  const [isScanning, setIsScanning] = useState(false);
+  const [identityForm, setIdentityForm] = useState({ firstName: '', lastName: '', idNumber: '', dateOfBirth: '', address: '', nationality: 'Bangladeshi' });
 
   // Fetch front desk lists
   const { data: arrivals = [], isLoading: loadingArr } = useQuery({
@@ -62,12 +73,83 @@ export const FrontDeskPage: React.FC = () => {
     queryFn: () => roomsApi.getRooms({ status: 'available' }),
   });
 
+  const { data: activeReservations = [] } = useQuery({
+    queryKey: ['reservations', 'check_in_room_conflicts'],
+    queryFn: () => reservationsApi.getReservations(),
+  });
+
+  const roomIsFreeForReservation = (room: Room, reservation: Reservation) => !activeReservations.some((other) =>
+    other.id !== reservation.id
+    && other.room_id === room.id
+    && (other.status === 'confirmed' || other.status === 'checked_in')
+    && other.check_in_date < reservation.check_out_date
+    && other.check_out_date > reservation.check_in_date
+  );
+
   const handleOpenCheckIn = (res: Reservation) => {
     setSelectedRes(res);
-    setCheckInRoomId(res.room_id || availableRooms[0]?.id || '');
-    setKeyCard(res.room ? `KC-${res.room.room_number}` : 'KC-AUTO');
+    const compatibleRoom = availableRooms.find((room) => room.id === res.room_id && room.room_type_id === res.room_type_id && roomIsFreeForReservation(room, res))
+      || availableRooms.find((room) => room.room_type_id === res.room_type_id && roomIsFreeForReservation(room, res));
+    setCheckInRoomId(compatibleRoom?.id || '');
+    setKeyCard(compatibleRoom ? `KC-${compatibleRoom.room_number}` : 'KC-AUTO');
     setDeposit(0);
+    setIdentityVerified(Boolean(res.guest?.id_verified_at));
+    setScannerText('');
+    setScanProgress('');
+    setScanWarnings([]);
+    setIdentityForm({
+      firstName: res.guest?.first_name || '',
+      lastName: res.guest?.last_name || '',
+      idNumber: res.guest?.id_number || '',
+      dateOfBirth: res.guest?.date_of_birth?.split('T')[0] || '',
+      address: res.guest?.address || '',
+      nationality: res.guest?.nationality || 'Bangladeshi',
+    });
     setIsCheckInOpen(true);
+  };
+
+  const applyParsedIdentity = (identity: ParsedNIDIdentity) => {
+    setIdentityForm((current) => ({
+      firstName: identity.first_name || current.firstName,
+      lastName: identity.last_name || current.lastName,
+      idNumber: identity.id_number || current.idNumber,
+      dateOfBirth: identity.date_of_birth || current.dateOfBirth,
+      address: identity.address || current.address,
+      nationality: identity.nationality || current.nationality,
+    }));
+    setScanWarnings(identity.warnings || []);
+    setIdentityVerified(false);
+  };
+
+  const parseScannerText = async (text: string) => {
+    if (!text.trim()) return;
+    const identity = await identityApi.parseNID(text);
+    applyParsedIdentity(identity);
+    setScanProgress('Scan complete — review the extracted details below.');
+  };
+
+  const handleNIDImage = async (file?: File) => {
+    if (!file) return;
+    setIsScanning(true);
+    setScanWarnings([]);
+    setScanProgress('Preparing secure on-device OCR...');
+    let worker: Awaited<ReturnType<typeof createWorker>> | null = null;
+    try {
+      worker = await createWorker('eng', 1, {
+        logger: (message) => {
+          if (message.status) setScanProgress(`${message.status}${message.progress ? ` ${Math.round(message.progress * 100)}%` : ''}`);
+        },
+      });
+      const result = await worker.recognize(file);
+      setScannerText(result.data.text);
+      await parseScannerText(result.data.text);
+    } catch (error: any) {
+      setScanProgress('The image could not be read. Use a clearer image or paste scanner text below.');
+      setScanWarnings([error?.message || 'NID OCR failed']);
+    } finally {
+      if (worker) await worker.terminate();
+      setIsScanning(false);
+    }
   };
 
   const handleExecuteCheckIn = async (e: React.FormEvent) => {
@@ -79,7 +161,15 @@ export const FrontDeskPage: React.FC = () => {
         room_id: checkInRoomId,
         deposit_amount: Number(deposit),
         payment_method: paymentMethod,
-        identity_verified: true,
+        identity_verified: identityVerified,
+        guest_identity: {
+          first_name: identityForm.firstName,
+          last_name: identityForm.lastName,
+          id_number: identityForm.idNumber,
+          date_of_birth: identityForm.dateOfBirth,
+          address: identityForm.address,
+          nationality: identityForm.nationality,
+        },
       });
       setIsCheckInOpen(false);
       queryClient.invalidateQueries({ queryKey: ['arrivals'] });
@@ -165,6 +255,9 @@ export const FrontDeskPage: React.FC = () => {
   };
 
   const currentList = getList();
+  const compatibleCheckInRooms = selectedRes
+    ? availableRooms.filter((room) => room.room_type_id === selectedRes.room_type_id && roomIsFreeForReservation(room, selectedRes))
+    : [];
 
   return (
     <div className="space-y-6">
@@ -349,7 +442,7 @@ export const FrontDeskPage: React.FC = () => {
         onClose={() => setIsCheckInOpen(false)}
         title="Confirm Guest Check-In"
         subtitle="Front Desk Reception"
-        maxWidth="md"
+        maxWidth="lg"
       >
         {selectedRes && (
           <form onSubmit={handleExecuteCheckIn} className="space-y-4 text-xs">
@@ -368,14 +461,51 @@ export const FrontDeskPage: React.FC = () => {
               </div>
             </div>
 
+            <section className="rounded-xl border border-[#b8d3c6] bg-[#f2f7f4] p-4">
+              <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
+                <div>
+                  <div className="flex items-center gap-2 font-semibold text-[#285f4e]"><ScanLine className="h-4 w-4" /> National ID Scanner</div>
+                  <p className="mt-1 text-[11px] leading-5 text-hotel-muted">Capture an NID image or paste text from a desktop scanner. OCR runs on this device; staff must review every field.</p>
+                </div>
+                <label className="inline-flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-lg bg-[#326f5c] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[#285a4b]">
+                  {isScanning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                  {isScanning ? 'Scanning…' : 'Scan NID Image'}
+                  <input disabled={isScanning} type="file" accept="image/*" capture="environment" className="sr-only" onChange={(event) => handleNIDImage(event.target.files?.[0])} />
+                </label>
+              </div>
+              {scanProgress && <p role="status" className="mt-3 text-[11px] font-medium text-[#326f5c]">{scanProgress}</p>}
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                <textarea value={scannerText} onChange={(event) => setScannerText(event.target.value)} rows={2} placeholder="Paste or scan raw NID text here…" className="min-h-16 flex-1 rounded-lg border border-hotel-line bg-white p-2 text-xs text-hotel-text outline-none focus:border-hotel-accent" />
+                <button type="button" disabled={!scannerText.trim() || isScanning} onClick={() => parseScannerText(scannerText)} className="rounded-lg border border-[#b8d3c6] bg-white px-4 py-2 text-xs font-semibold text-[#285f4e] disabled:cursor-not-allowed disabled:opacity-50">Extract Details</button>
+              </div>
+              {scanWarnings.length > 0 && <ul className="mt-2 list-disc space-y-1 pl-4 text-[10px] text-[#8a641f]">{scanWarnings.map((warning) => <li key={warning}>{warning}</li>)}</ul>}
+            </section>
+
+            <section className="space-y-3 rounded-xl border border-hotel-line bg-white p-4">
+              <div className="flex items-center gap-2 font-semibold text-hotel-text"><ShieldCheck className="h-4 w-4 text-[#326f5c]" /> Review Extracted Guest Information</div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <label className="text-hotel-muted font-medium">First Name *<input required value={identityForm.firstName} onChange={(e) => setIdentityForm({ ...identityForm, firstName: e.target.value })} className="mt-1 w-full rounded-lg border border-hotel-line bg-white p-2 text-xs text-hotel-text outline-none focus:border-hotel-accent" /></label>
+                <label className="text-hotel-muted font-medium">Last Name *<input required value={identityForm.lastName} onChange={(e) => setIdentityForm({ ...identityForm, lastName: e.target.value })} className="mt-1 w-full rounded-lg border border-hotel-line bg-white p-2 text-xs text-hotel-text outline-none focus:border-hotel-accent" /></label>
+                <label className="text-hotel-muted font-medium">National ID Number *<input required inputMode="numeric" pattern="[0-9]{10}|[0-9]{13}|[0-9]{17}" value={identityForm.idNumber} onChange={(e) => setIdentityForm({ ...identityForm, idNumber: e.target.value.replace(/\D/g, '').slice(0, 17) })} className="mt-1 w-full rounded-lg border border-hotel-line bg-white p-2 text-xs text-hotel-text outline-none focus:border-hotel-accent" /></label>
+                <label className="text-hotel-muted font-medium">Date of Birth<input type="date" max={new Date().toISOString().split('T')[0]} value={identityForm.dateOfBirth} onChange={(e) => setIdentityForm({ ...identityForm, dateOfBirth: e.target.value })} className="mt-1 w-full rounded-lg border border-hotel-line bg-white p-2 text-xs text-hotel-text outline-none focus:border-hotel-accent" /></label>
+                <label className="text-hotel-muted font-medium sm:col-span-2">Address<textarea rows={2} value={identityForm.address} onChange={(e) => setIdentityForm({ ...identityForm, address: e.target.value })} className="mt-1 w-full rounded-lg border border-hotel-line bg-white p-2 text-xs text-hotel-text outline-none focus:border-hotel-accent" /></label>
+              </div>
+              <label className="flex cursor-pointer items-start gap-2 rounded-lg border border-[#b8d3c6] bg-[#e7f1ec] p-3 text-[11px] text-[#285f4e]">
+                <input required type="checkbox" checked={identityVerified} onChange={(e) => setIdentityVerified(e.target.checked)} className="mt-0.5 h-4 w-4 accent-[#326f5c]" />
+                <span><strong>Identity reviewed and verified.</strong> I confirm the scanned details match the physical NID presented by the guest.</span>
+              </label>
+            </section>
+
             <div>
               <label className="text-hotel-muted font-medium">Select Room Allocation *</label>
               <select
+                required
                 value={checkInRoomId}
                 onChange={(e) => setCheckInRoomId(e.target.value)}
                 className="mt-1 w-full rounded-lg border border-hotel-line bg-hotel-panel p-2 text-xs text-hotel-text focus:border-hotel-accent focus:outline-none"
               >
-                {availableRooms.map((r) => (
+                <option value="" disabled>Select a compatible available room</option>
+                {compatibleCheckInRooms.map((r) => (
                   <option key={r.id} value={r.id}>
                     Room {r.room_number} (Floor {r.floor?.floor_number}) — {r.room_type?.name}
                   </option>
@@ -405,11 +535,6 @@ export const FrontDeskPage: React.FC = () => {
                   className="mt-1 w-full rounded-lg border border-hotel-line bg-white/[0.04] p-2 text-xs text-hotel-text focus:border-hotel-accent focus:outline-none"
                 />
               </div>
-            </div>
-
-            <div className="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-950/20 p-2.5 text-[11px] text-emerald-300">
-              <CheckCircle className="h-4 w-4" />
-              <span>Identity Document & Registration Form Verified</span>
             </div>
 
             <div className="flex justify-end gap-3 pt-3 border-t border-hotel-line">

@@ -29,7 +29,7 @@ export const LoginPage: React.FC = () => {
       await login({ username, password });
       navigate('/');
     } catch (err: any) {
-      setError(err.response?.data?.error || 'We could not verify those credentials.');
+      setError(err.response?.data?.error || 'We could not verify that account and access PIN.');
     } finally {
       setLoading(false);
     }
@@ -81,7 +81,7 @@ export const LoginPage: React.FC = () => {
               </div>
 
               {error && <div id="login-error" role="alert" aria-live="assertive" className="mb-4 rounded-xl border border-rose-400/35 bg-rose-950/45 px-4 py-3 text-sm font-medium text-rose-100">{error}</div>}
-              {helpVisible && <div role="status" className="mb-4 rounded-xl border border-[#e2b453]/30 bg-[#e2b453]/10 px-4 py-3 text-xs leading-5 text-[#f4d58f]">Please contact your HotelOS administrator to reset your password.</div>}
+              {helpVisible && <div role="status" className="mb-4 rounded-xl border border-[#e2b453]/30 bg-[#e2b453]/10 px-4 py-3 text-xs leading-5 text-[#f4d58f]">Please contact your HotelOS administrator to reset your access PIN.</div>}
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <label className="block">
@@ -93,10 +93,10 @@ export const LoginPage: React.FC = () => {
                 </label>
 
                 <label className="block">
-                  <span className="mb-1 block text-[10px] font-bold uppercase tracking-[.15em] text-[#c3cdd1]">Password</span>
+                  <span className="mb-1 block text-[10px] font-bold uppercase tracking-[.15em] text-[#c3cdd1]">Access PIN</span>
                   <span className="relative block">
                     <LockKeyhole className="absolute left-1 top-1/2 h-4 w-4 -translate-y-1/2 text-[#e0b65b]" />
-                    <input required autoComplete="current-password" aria-invalid={!!error} aria-describedby={error ? 'login-error' : undefined} type={showPassword ? 'text' : 'password'} value={password} onChange={(event) => setPassword(event.target.value)} className="h-12 w-full border-x-0 border-b border-t-0 border-[#6f8189] bg-transparent pl-8 pr-12 text-base text-[#fff8ec] outline-none transition placeholder:text-[#84959c] focus:border-[#edbd59] focus:ring-0" placeholder="Password" />
+                    <input required inputMode="numeric" pattern="[0-9]{4}" maxLength={4} autoComplete="current-password" aria-label="Four digit access PIN" aria-invalid={!!error} aria-describedby={error ? 'login-error' : undefined} type={showPassword ? 'text' : 'password'} value={password} onChange={(event) => setPassword(event.target.value.replace(/\D/g, '').slice(0, 4))} className="h-12 w-full border-x-0 border-b border-t-0 border-[#6f8189] bg-transparent pl-8 pr-12 text-base tracking-[.3em] text-[#fff8ec] outline-none transition placeholder:tracking-normal placeholder:text-[#84959c] focus:border-[#edbd59] focus:ring-0" placeholder="4-digit PIN" />
                     <button type="button" onClick={() => setShowPassword((visible) => !visible)} aria-label={showPassword ? 'Hide password' : 'Show password'} aria-pressed={showPassword} className="absolute right-0 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-lg text-[#9eacb2] transition hover:bg-white/5 hover:text-[#f1c76c]">
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
@@ -105,7 +105,7 @@ export const LoginPage: React.FC = () => {
 
                 <div className="flex items-center justify-between gap-3 text-[11px]">
                   <span className="flex items-center gap-2 text-[#9fb0b6]"><ShieldCheck className="h-3.5 w-3.5 text-[#cba451]" /> Encrypted session</span>
-                  <button type="button" onClick={() => setHelpVisible((visible) => !visible)} className="min-h-11 text-[#d8b866] transition hover:text-[#f1d28b]">Forgot password?</button>
+                  <button type="button" onClick={() => setHelpVisible((visible) => !visible)} className="min-h-11 text-[#d8b866] transition hover:text-[#f1d28b]">Forgot PIN?</button>
                 </div>
 
                 <button type="submit" disabled={loading} aria-busy={loading} className="group flex h-12 w-full items-center justify-center gap-2 rounded-full border border-[#edbd59]/45 bg-[linear-gradient(90deg,#b77a1d,#e1a12c)] px-4 text-xs font-extrabold uppercase tracking-[.16em] text-[#091923] shadow-[0_14px_30px_rgba(0,0,0,.35)] transition hover:-translate-y-0.5 hover:brightness-110 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-65">

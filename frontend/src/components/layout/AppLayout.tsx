@@ -33,6 +33,8 @@ export const AppLayout: React.FC = () => {
       roomTypeId: '',
       checkInDate: today.toISOString().split('T')[0],
       checkOutDate: departure.toISOString().split('T')[0],
+      checkInType: 'scheduled' as 'instant' | 'scheduled',
+      bookingSource: 'website',
       adults: 2,
       advancePayment: 0,
       specialRequests: '',
@@ -53,7 +55,8 @@ export const AppLayout: React.FC = () => {
         adults: Number(bookingForm.adults),
         advance_payment: Number(bookingForm.advancePayment),
         special_requests: bookingForm.specialRequests,
-        booking_source: 'direct',
+        booking_source: bookingForm.bookingSource,
+        check_in_type: bookingForm.checkInType,
       });
       setIsBookingModalOpen(false);
       setToastMessage(res.message);
@@ -123,6 +126,49 @@ export const AppLayout: React.FC = () => {
                 onChange={(e) => setBookingForm({ ...bookingForm, lastName: e.target.value })}
                 className="mt-1 w-full rounded-lg border border-hotel-line bg-white/[0.04] p-2 text-xs text-hotel-text focus:border-hotel-accent focus:outline-none"
               />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <label className="text-xs text-hotel-muted font-medium">Check-In Type *</label>
+              <select
+                required
+                value={bookingForm.checkInType}
+                onChange={(e) => {
+                  const checkInType = e.target.value as 'instant' | 'scheduled';
+                  if (checkInType === 'instant') {
+                    const today = new Date();
+                    const tomorrow = new Date(today);
+                    tomorrow.setDate(today.getDate() + 1);
+                    setBookingForm({ ...bookingForm, checkInType, checkInDate: today.toISOString().split('T')[0], checkOutDate: tomorrow.toISOString().split('T')[0] });
+                  } else {
+                    setBookingForm({ ...bookingForm, checkInType });
+                  }
+                }}
+                className="mt-1 w-full rounded-lg border border-hotel-line bg-hotel-panel p-2 text-xs text-hotel-text focus:border-hotel-accent focus:outline-none"
+              >
+                <option value="instant">Instant Check-In</option>
+                <option value="scheduled">Scheduled Check-In</option>
+              </select>
+              <p className="mt-1 text-[10px] text-hotel-muted">Instant check-in uses today as the arrival date.</p>
+            </div>
+            <div>
+              <label className="text-xs text-hotel-muted font-medium">Reservation Source *</label>
+              <select
+                required
+                value={bookingForm.bookingSource}
+                onChange={(e) => setBookingForm({ ...bookingForm, bookingSource: e.target.value })}
+                className="mt-1 w-full rounded-lg border border-hotel-line bg-hotel-panel p-2 text-xs text-hotel-text focus:border-hotel-accent focus:outline-none"
+              >
+                <option value="phone">Phone</option>
+                <option value="website">Website</option>
+                <option value="walk_in">Walk-In</option>
+                <option value="email">Email</option>
+                <option value="booking_com">Booking.com</option>
+                <option value="expedia">Expedia</option>
+                <option value="other">Other</option>
+              </select>
             </div>
           </div>
 

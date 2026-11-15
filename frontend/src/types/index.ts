@@ -107,6 +107,8 @@ export interface Guest {
   phone: string;
   id_type: string;
   id_number: string;
+  date_of_birth?: string;
+  id_verified_at?: string;
   nationality: string;
   address: string;
   city: string;
@@ -144,6 +146,7 @@ export interface Reservation {
   adults: number;
   children: number;
   booking_source: string;
+  check_in_type: 'instant' | 'scheduled';
   status: ReservationStatus;
   base_rate: number;
   tax_amount: number;

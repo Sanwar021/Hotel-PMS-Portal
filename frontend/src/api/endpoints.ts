@@ -109,7 +109,7 @@ export const frontdeskApi = {
     const res = await apiClient.get('/frontdesk/in-house');
     return res.data.in_house ?? [];
   },
-  checkIn: async (data: { reservation_id: string; room_id?: string; deposit_amount?: number; payment_method?: string; identity_verified?: boolean; notes?: string }) => {
+  checkIn: async (data: { reservation_id: string; room_id?: string; deposit_amount?: number; payment_method?: string; identity_verified?: boolean; notes?: string; guest_identity?: { first_name: string; last_name: string; id_number: string; date_of_birth?: string; address?: string; nationality?: string } }) => {
     const res = await apiClient.post('/frontdesk/check-in', data);
     return res.data;
   },
@@ -120,6 +120,23 @@ export const frontdeskApi = {
   transferRoom: async (data: { reservation_id: string; new_room_id: string; reason?: string }) => {
     const res = await apiClient.post('/frontdesk/transfer-room', data);
     return res.data;
+  },
+};
+
+export interface ParsedNIDIdentity {
+  first_name: string;
+  last_name: string;
+  id_number: string;
+  date_of_birth: string;
+  address: string;
+  nationality: string;
+  warnings: string[];
+}
+
+export const identityApi = {
+  parseNID: async (rawText: string): Promise<ParsedNIDIdentity> => {
+    const res = await apiClient.post('/identity/nid/parse', { raw_text: rawText });
+    return res.data.identity;
   },
 };
 

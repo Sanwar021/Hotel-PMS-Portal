@@ -148,7 +148,10 @@ export const ReservationsPage: React.FC = () => {
                       </div>
                     </td>
                     <td className="py-3.5 px-4 text-hotel-muted">
-                      {res.rate_plan?.name || 'Best Available Rate'}
+                      <div>{res.rate_plan?.name || 'Best Available Rate'}</div>
+                      <div className="mt-1 text-[10px] font-medium text-[#326f5c]">
+                        {res.booking_source.replace(/_/g, ' ')} · {res.check_in_type === 'instant' ? 'Instant check-in' : 'Scheduled check-in'}
+                      </div>
                     </td>
                     <td className="py-3.5 px-4">
                       <StatusBadge status={res.status} type="reservation" size="sm" />
@@ -256,6 +259,12 @@ export const ReservationsPage: React.FC = () => {
                 </div>
                 <div className="text-hotel-accent font-semibold mt-0.5">
                   Total Duration: {selectedRes.nights} Nights
+                </div>
+                <div className="mt-1 text-[11px] text-hotel-muted">
+                  Check-in Type: <span className="font-semibold capitalize text-hotel-text">{selectedRes.check_in_type || 'scheduled'}</span>
+                </div>
+                <div className="text-[11px] text-hotel-muted">
+                  Reservation Source: <span className="font-semibold capitalize text-hotel-text">{selectedRes.booking_source.replace(/_/g, ' ')}</span>
                 </div>
               </div>
 

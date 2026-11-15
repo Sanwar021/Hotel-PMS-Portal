@@ -27,13 +27,13 @@ func LoginHandler(cfg *config.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req LoginRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Username and password are required"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Username and access PIN are required"})
 			return
 		}
 
 		var user models.User
 		if err := database.DB.Where("username = ? OR email = ?", req.Username, req.Username).First(&user).Error; err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or access PIN"})
 			return
 		}
 
@@ -53,7 +53,7 @@ func LoginHandler(cfg *config.Config) gin.HandlerFunc {
 				user.LockedUntil = &lockedUntil
 			}
 			database.DB.Model(&user).Updates(map[string]interface{}{"failed_login_attempts": user.FailedLoginAttempts, "locked_until": user.LockedUntil})
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or access PIN"})
 			return
 		}
 		now := time.Now()

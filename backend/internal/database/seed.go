@@ -57,7 +57,7 @@ func SeedDatabase(db *gorm.DB) error {
 			HotelID:      &hotel.ID,
 			Username:     "admin",
 			Email:        "admin@hotelos.com",
-			PasswordHash: hashPassword("admin123"),
+			PasswordHash: hashPassword("3400"),
 			FirstName:    "Alexander",
 			LastName:     "Vance",
 			Role:         models.RoleSuperAdmin,
@@ -67,7 +67,7 @@ func SeedDatabase(db *gorm.DB) error {
 			HotelID:      &hotel.ID,
 			Username:     "manager",
 			Email:        "manager@hotelos.com",
-			PasswordHash: hashPassword("manager123"),
+			PasswordHash: hashPassword("HotelOS#Manager26"),
 			FirstName:    "Shahriar",
 			LastName:     "Khan",
 			Role:         models.RoleHotelManager,
@@ -77,7 +77,7 @@ func SeedDatabase(db *gorm.DB) error {
 			HotelID:      &hotel.ID,
 			Username:     "reception",
 			Email:        "frontdesk@hotelos.com",
-			PasswordHash: hashPassword("reception123"),
+			PasswordHash: hashPassword("3400"),
 			FirstName:    "Nusrat",
 			LastName:     "Jahan",
 			Role:         models.RoleReceptionist,
@@ -87,7 +87,7 @@ func SeedDatabase(db *gorm.DB) error {
 			HotelID:      &hotel.ID,
 			Username:     "accountant",
 			Email:        "finance@hotelos.com",
-			PasswordHash: hashPassword("account123"),
+			PasswordHash: hashPassword("3400"),
 			FirstName:    "Farhan",
 			LastName:     "Chowdhury",
 			Role:         models.RoleAccountant,
@@ -97,7 +97,7 @@ func SeedDatabase(db *gorm.DB) error {
 			HotelID:      &hotel.ID,
 			Username:     "housekeeping",
 			Email:        "hk@hotelos.com",
-			PasswordHash: hashPassword("clean123"),
+			PasswordHash: hashPassword("3400"),
 			FirstName:    "Salma",
 			LastName:     "Begum",
 			Role:         models.RoleHousekeepingStaff,
@@ -107,7 +107,7 @@ func SeedDatabase(db *gorm.DB) error {
 			HotelID:      &hotel.ID,
 			Username:     "restaurant",
 			Email:        "dining@hotelos.com",
-			PasswordHash: hashPassword("dine123"),
+			PasswordHash: hashPassword("HotelOS#Dining26"),
 			FirstName:    "Tanvir",
 			LastName:     "Hossain",
 			Role:         models.RoleRestaurantStaff,
@@ -480,6 +480,7 @@ func SeedDatabase(db *gorm.DB) error {
 			Adults:            rt.CapacityAdults,
 			Children:          0,
 			BookingSource:     spec.Source,
+			CheckInType:       models.CheckInScheduled,
 			Status:            spec.Status,
 			BaseRate:          basePrice,
 			TaxAmount:         tax,
@@ -488,6 +489,9 @@ func SeedDatabase(db *gorm.DB) error {
 			PaidAmount:        spec.AdvancePaid,
 			SpecialRequests:   spec.SpecialNotes,
 			Notes:             fmt.Sprintf("Auto-seeded reservation %s", resNum),
+		}
+		if spec.Source == models.SourceWalkIn && spec.CheckInOff == 0 {
+			res.CheckInType = models.CheckInInstant
 		}
 
 		if spec.Status == models.ResCancelled {
@@ -743,7 +747,99 @@ func SeedDatabase(db *gorm.DB) error {
 	}
 	db.Create(&employees)
 
-	// 15. AUDIT LOGS & NOTIFICATIONS
+	// 15. LIVE RESTAURANT ORDERS
+	orderSpecs := []struct {
+		Number string
+		Type   models.OrderType
+		Table  int
+		Status models.OrderStatus
+		Items  []int
+	}{
+		{"ORD-2026-1001", models.OrderDineIn, 1, models.OrderPreparing, []int{0, 3, 9}},
+		{"ORD-2026-1002", models.OrderDineIn, 6, models.OrderServed, []int{1, 4, 10}},
+		{"ORD-2026-1003", models.OrderRoomService, 0, models.OrderPlaced, []int{6, 9}},
+		{"ORD-2026-1004", models.OrderDineIn, 3, models.OrderReady, []int{2, 5, 11}},
+		{"ORD-2026-1005", models.OrderTakeaway, 0, models.OrderPaid, []int{6, 8}},
+	}
+	for _, spec := range orderSpecs {
+		var tableID *uuid.UUID
+		var roomID *uuid.UUID
+		if spec.Type == models.OrderDineIn {
+			tableID = &tables[spec.Table].ID
+		}
+		if spec.Type == models.OrderRoomService {
+			roomID = &allRooms[1].ID
+		}
+		subtotal := 0.0
+		for _, itemIndex := range spec.Items {
+			subtotal += menuItems[itemIndex].Price
+		}
+		order := models.RestaurantOrder{
+			OrderNumber:  spec.Number,
+			OrderType:    spec.Type,
+			TableID:      tableID,
+			RoomID:       roomID,
+			Status:       spec.Status,
+			Subtotal:     subtotal,
+			Tax:          subtotal * 0.10,
+			Total:        subtotal * 1.10,
+			ServerUserID: &users[5].ID,
+			Notes:        "Active service order managed by The Pearl Bistro.",
+		}
+		db.Create(&order)
+		for _, itemIndex := range spec.Items {
+			item := menuItems[itemIndex]
+			db.Create(&models.RestaurantOrderItem{OrderID: order.ID, MenuItemID: item.ID, ItemName: item.Name, UnitPrice: item.Price, Quantity: 1, TotalPrice: item.Price})
+		}
+	}
+
+	// 16. PROCUREMENT PIPELINE & STOCK MOVEMENTS
+	deliveryTomorrow := today.AddDate(0, 0, 1)
+	deliveryNextWeek := today.AddDate(0, 0, 5)
+	purchaseOrders := []models.PurchaseOrder{
+		{PONumber: "PO-2026-0118", SupplierID: suppliers[1].ID, Status: models.POPendingApproval, TotalAmount: 42500, RequestedByUserID: &users[3].ID, ExpectedDeliveryDate: &deliveryTomorrow},
+		{PONumber: "PO-2026-0117", SupplierID: suppliers[2].ID, Status: models.POApproved, TotalAmount: 31800, RequestedByUserID: &users[4].ID, ApprovedByUserID: &users[0].ID, ExpectedDeliveryDate: &deliveryNextWeek},
+		{PONumber: "PO-2026-0116", SupplierID: suppliers[0].ID, Status: models.POOrdered, TotalAmount: 92500, RequestedByUserID: &users[4].ID, ApprovedByUserID: &users[0].ID, ExpectedDeliveryDate: &deliveryNextWeek},
+	}
+	db.Create(&purchaseOrders)
+	db.Create(&[]models.PurchaseOrderItem{
+		{POID: purchaseOrders[0].ID, ItemName: "Nespresso Compatible Capsules (Assorted)", Quantity: 50, UnitPrice: 850, TotalPrice: 42500},
+		{POID: purchaseOrders[1].ID, ItemName: "Luxury Verbena Amenity Replenishment Set", Quantity: 300, UnitPrice: 106, TotalPrice: 31800},
+		{POID: purchaseOrders[2].ID, ItemName: "400 TC Egyptian Cotton Linen Package", Quantity: 50, UnitPrice: 1850, TotalPrice: 92500},
+	})
+	db.Create(&[]models.InventoryMovement{
+		{ItemID: inventoryItems[7].ID, Type: models.MovementConsumed, Quantity: 12, Reason: "Guest room coffee service", Department: "Housekeeping", RecordedByUserID: &users[4].ID},
+		{ItemID: inventoryItems[9].ID, Type: models.MovementConsumed, Quantity: 8, Reason: "Daily room sanitation", Department: "Housekeeping", RecordedByUserID: &users[4].ID},
+		{ItemID: inventoryItems[2].ID, Type: models.MovementReceived, Quantity: 40, Reason: "Scheduled linen replenishment", Department: "Stores", RecordedByUserID: &users[3].ID},
+	})
+
+	// 17. ACTIVE STAFF ROSTER
+	shifts := make([]models.Shift, 0, len(employees)*2)
+	for index, employee := range employees {
+		shiftName, startTime, endTime := "Morning", "07:00", "15:00"
+		if index%3 == 1 {
+			shiftName, startTime, endTime = "Evening", "15:00", "23:00"
+		} else if index%3 == 2 {
+			shiftName, startTime, endTime = "Night", "23:00", "07:00"
+		}
+		shifts = append(shifts,
+			models.Shift{EmployeeID: employee.ID, ShiftName: shiftName, Date: today, StartTime: startTime, EndTime: endTime, Status: "present"},
+			models.Shift{EmployeeID: employee.ID, ShiftName: shiftName, Date: today.AddDate(0, 0, 1), StartTime: startTime, EndTime: endTime, Status: "scheduled"},
+		)
+	}
+	db.Create(&shifts)
+
+	// 18. AUDIT LOGS & NOTIFICATIONS
+	auditLogs := []models.AuditLog{
+		{UserID: &users[2].ID, Action: "check_in", EntityType: "reservation", EntityID: "RES-2026-0001", Details: "Guest identity verified and room key issued.", IPAddress: "10.10.30.41"},
+		{UserID: &users[3].ID, Action: "payment", EntityType: "folio", EntityID: "INV-2026-0003", Details: "Advance card payment reconciled successfully.", IPAddress: "10.10.30.42"},
+		{UserID: &users[4].ID, Action: "update", EntityType: "housekeeping_task", EntityID: "ROOM-108", Details: "Turnover checklist completed and sent for inspection.", IPAddress: "10.10.30.43"},
+		{UserID: &users[0].ID, Action: "approve", EntityType: "purchase_order", EntityID: "PO-2026-0117", Details: "Amenity replenishment order approved.", IPAddress: "10.10.30.40"},
+		{UserID: &users[5].ID, Action: "create", EntityType: "restaurant_order", EntityID: "ORD-2026-1002", Details: "Terrace dinner order submitted to kitchen.", IPAddress: "10.10.30.44"},
+		{UserID: &users[1].ID, Action: "assign", EntityType: "maintenance_request", EntityID: "ROOM-110", Details: "HVAC service request assigned to facility engineering.", IPAddress: "10.10.30.45"},
+	}
+	db.Create(&auditLogs)
+
 	notifications := []models.Notification{
 		{
 			Title:   "VIP Arrival Today",

@@ -134,24 +134,26 @@ const (
 
 type Guest struct {
 	BaseModel
-	HotelID       uuid.UUID `gorm:"type:uuid;not null;index" json:"hotel_id"`
-	FirstName     string    `gorm:"size:100;not null;index" json:"first_name"`
-	LastName      string    `gorm:"size:100;not null;index" json:"last_name"`
-	Email         string    `gorm:"size:100;index" json:"email"`
-	Phone         string    `gorm:"size:50;index" json:"phone"`
-	IDType        string    `gorm:"size:50;default:'National ID'" json:"id_type"` // Passport, National ID, Driver's License
-	IDNumber      string    `gorm:"size:100" json:"id_number"`
-	Nationality   string    `gorm:"size:100;default:'Bangladeshi'" json:"nationality"`
-	Address       string    `gorm:"size:255" json:"address"`
-	City          string    `gorm:"size:100" json:"city"`
-	Country       string    `gorm:"size:100;default:'Bangladesh'" json:"country"`
-	VIPStatus     VIPStatus `gorm:"size:20;default:'none'" json:"vip_status"`
-	LoyaltyPoints int       `gorm:"default:0" json:"loyalty_points"`
-	TotalStays    int       `gorm:"default:0" json:"total_stays"`
-	TotalSpent    float64   `gorm:"type:decimal(14,2);default:0" json:"total_spent"`
-	Preferences   string    `gorm:"type:text" json:"preferences"`
-	Notes         string    `gorm:"type:text" json:"notes"`
-	CompanyName   string    `gorm:"size:150" json:"company_name"`
+	HotelID       uuid.UUID  `gorm:"type:uuid;not null;index" json:"hotel_id"`
+	FirstName     string     `gorm:"size:100;not null;index" json:"first_name"`
+	LastName      string     `gorm:"size:100;not null;index" json:"last_name"`
+	Email         string     `gorm:"size:100;index" json:"email"`
+	Phone         string     `gorm:"size:50;index" json:"phone"`
+	IDType        string     `gorm:"size:50;default:'National ID'" json:"id_type"` // Passport, National ID, Driver's License
+	IDNumber      string     `gorm:"size:100" json:"id_number"`
+	DateOfBirth   *time.Time `gorm:"type:date" json:"date_of_birth"`
+	IDVerifiedAt  *time.Time `json:"id_verified_at"`
+	Nationality   string     `gorm:"size:100;default:'Bangladeshi'" json:"nationality"`
+	Address       string     `gorm:"size:255" json:"address"`
+	City          string     `gorm:"size:100" json:"city"`
+	Country       string     `gorm:"size:100;default:'Bangladesh'" json:"country"`
+	VIPStatus     VIPStatus  `gorm:"size:20;default:'none'" json:"vip_status"`
+	LoyaltyPoints int        `gorm:"default:0" json:"loyalty_points"`
+	TotalStays    int        `gorm:"default:0" json:"total_stays"`
+	TotalSpent    float64    `gorm:"type:decimal(14,2);default:0" json:"total_spent"`
+	Preferences   string     `gorm:"type:text" json:"preferences"`
+	Notes         string     `gorm:"type:text" json:"notes"`
+	CompanyName   string     `gorm:"size:150" json:"company_name"`
 }
 
 // -------------------------------------------------------------
@@ -174,11 +176,23 @@ type BookingSource string
 const (
 	SourceDirect      BookingSource = "direct"
 	SourceWalkIn      BookingSource = "walk_in"
-	SourceTelephone   BookingSource = "telephone"
+	SourceTelephone   BookingSource = "telephone" // legacy value
+	SourcePhone       BookingSource = "phone"
 	SourceWebsite     BookingSource = "website"
+	SourceEmail       BookingSource = "email"
+	SourceBookingCom  BookingSource = "booking_com"
+	SourceExpedia     BookingSource = "expedia"
+	SourceOther       BookingSource = "other"
 	SourceOTA         BookingSource = "ota"
 	SourceCorporate   BookingSource = "corporate"
 	SourceTravelAgent BookingSource = "travel_agent"
+)
+
+type CheckInType string
+
+const (
+	CheckInInstant   CheckInType = "instant"
+	CheckInScheduled CheckInType = "scheduled"
 )
 
 type RatePlan struct {
@@ -208,6 +222,7 @@ type Reservation struct {
 	Adults             int               `gorm:"default:1" json:"adults"`
 	Children           int               `gorm:"default:0" json:"children"`
 	BookingSource      BookingSource     `gorm:"size:50;default:'direct'" json:"booking_source"`
+	CheckInType        CheckInType       `gorm:"size:30;not null;default:'scheduled'" json:"check_in_type"`
 	Status             ReservationStatus `gorm:"size:30;default:'confirmed';index" json:"status"`
 	BaseRate           float64           `gorm:"type:decimal(12,2);not null" json:"base_rate"`
 	TaxAmount          float64           `gorm:"type:decimal(12,2);default:0" json:"tax_amount"`

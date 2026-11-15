@@ -66,13 +66,23 @@ func GetInHouseGuests(c *gin.Context) {
 }
 
 type CheckInRequest struct {
-	ReservationID    uuid.UUID  `json:"reservation_id" binding:"required"`
-	RoomID           *uuid.UUID `json:"room_id"` // Optional override or final confirmation
-	KeyCardCode      string     `json:"key_card_code"`
-	DepositAmount    float64    `json:"deposit_amount"`
-	PaymentMethod    string     `json:"payment_method"`
-	IdentityVerified bool       `json:"identity_verified"`
-	Notes            string     `json:"notes"`
+	ReservationID    uuid.UUID           `json:"reservation_id" binding:"required"`
+	RoomID           *uuid.UUID          `json:"room_id"` // Optional override or final confirmation
+	KeyCardCode      string              `json:"key_card_code"`
+	DepositAmount    float64             `json:"deposit_amount"`
+	PaymentMethod    string              `json:"payment_method"`
+	IdentityVerified bool                `json:"identity_verified"`
+	Notes            string              `json:"notes"`
+	GuestIdentity    *GuestIdentityInput `json:"guest_identity"`
+}
+
+type GuestIdentityInput struct {
+	FirstName   string `json:"first_name"`
+	LastName    string `json:"last_name"`
+	IDNumber    string `json:"id_number"`
+	DateOfBirth string `json:"date_of_birth"`
+	Address     string `json:"address"`
+	Nationality string `json:"nationality"`
 }
 
 func CheckInGuest(c *gin.Context) {
@@ -105,6 +115,52 @@ func CheckInGuest(c *gin.Context) {
 		tx.Rollback()
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Guest identity must be verified before check-in"})
 		return
+	}
+	if req.GuestIdentity != nil {
+		identity := req.GuestIdentity
+		if strings.TrimSpace(identity.FirstName) == "" || strings.TrimSpace(identity.LastName) == "" || strings.TrimSpace(identity.IDNumber) == "" {
+			tx.Rollback()
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Guest name and National ID number are required after scanning"})
+			return
+		}
+		idDigits := strings.Map(func(r rune) rune {
+			if r >= '0' && r <= '9' {
+				return r
+			}
+			return -1
+		}, identity.IDNumber)
+		if len(idDigits) < 10 || len(idDigits) > 17 {
+			tx.Rollback()
+			c.JSON(http.StatusBadRequest, gin.H{"error": "National ID number must contain 10 to 17 digits"})
+			return
+		}
+		var birthDate *time.Time
+		if identity.DateOfBirth != "" {
+			parsed, err := time.Parse("2006-01-02", identity.DateOfBirth)
+			if err != nil || parsed.After(time.Now()) {
+				tx.Rollback()
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Date of birth is invalid"})
+				return
+			}
+			birthDate = &parsed
+		}
+		verifiedAt := time.Now()
+		updates := map[string]interface{}{
+			"first_name": strings.TrimSpace(identity.FirstName), "last_name": strings.TrimSpace(identity.LastName),
+			"id_type": "National ID", "id_number": idDigits, "address": strings.TrimSpace(identity.Address),
+			"id_verified_at": verifiedAt,
+		}
+		if birthDate != nil {
+			updates["date_of_birth"] = *birthDate
+		}
+		if strings.TrimSpace(identity.Nationality) != "" {
+			updates["nationality"] = strings.TrimSpace(identity.Nationality)
+		}
+		if err := tx.Model(&models.Guest{}).Where("id = ?", res.GuestID).Updates(updates).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save verified National ID information"})
+			return
+		}
 	}
 
 	// Determine room to assign

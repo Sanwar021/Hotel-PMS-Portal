@@ -29,6 +29,7 @@ type CreateReservationRequest struct {
 	Adults          int                  `json:"adults"`
 	Children        int                  `json:"children"`
 	BookingSource   models.BookingSource `json:"booking_source"`
+	CheckInType     models.CheckInType   `json:"check_in_type"`
 	AdvancePayment  float64              `json:"advance_payment"`
 	SpecialRequests string               `json:"special_requests"`
 	Notes           string               `json:"notes"`
@@ -59,6 +60,30 @@ func CreateReservation(c *gin.Context) {
 	if req.Adults < 1 || req.Children < 0 || req.AdvancePayment < 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Adults must be at least 1; children and advance payment cannot be negative"})
 		return
+	}
+	validSources := map[models.BookingSource]bool{
+		models.SourcePhone: true, models.SourceWebsite: true, models.SourceWalkIn: true,
+		models.SourceEmail: true, models.SourceBookingCom: true, models.SourceExpedia: true,
+		models.SourceOther: true, models.SourceDirect: true, models.SourceCorporate: true,
+		models.SourceTravelAgent: true, models.SourceOTA: true, models.SourceTelephone: true,
+	}
+	if req.BookingSource != "" && !validSources[req.BookingSource] {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid reservation source"})
+		return
+	}
+	if req.CheckInType == "" {
+		req.CheckInType = models.CheckInScheduled
+	}
+	if req.CheckInType != models.CheckInInstant && req.CheckInType != models.CheckInScheduled {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Check-in type must be instant or scheduled"})
+		return
+	}
+	if req.CheckInType == models.CheckInInstant {
+		today := time.Now().Format("2006-01-02")
+		if req.CheckInDate != today {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Instant check-in requires today's check-in date"})
+			return
+		}
 	}
 
 	nights := int(cOut.Sub(cIn).Hours() / 24)
@@ -258,6 +283,7 @@ func CreateReservation(c *gin.Context) {
 		Adults:            adults,
 		Children:          req.Children,
 		BookingSource:     source,
+		CheckInType:       req.CheckInType,
 		Status:            models.ResConfirmed,
 		BaseRate:          baseRate,
 		TaxAmount:         tax,

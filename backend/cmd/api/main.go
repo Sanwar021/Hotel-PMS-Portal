@@ -122,6 +122,7 @@ func main() {
 			api.POST("/frontdesk/check-in", middleware.RequireRole(models.RoleSuperAdmin, models.RoleHotelManager, models.RoleReceptionist), handlers.CheckInGuest)
 			api.POST("/frontdesk/check-out", middleware.RequireRole(models.RoleSuperAdmin, models.RoleHotelManager, models.RoleReceptionist, models.RoleAccountant), handlers.CheckOutGuest)
 			api.POST("/frontdesk/transfer-room", middleware.RequireRole(models.RoleSuperAdmin, models.RoleHotelManager, models.RoleReceptionist), handlers.TransferRoom)
+			api.POST("/identity/nid/parse", middleware.RequireRole(models.RoleSuperAdmin, models.RoleHotelManager, models.RoleReceptionist), handlers.ParseNIDText)
 
 			// Guests CRM
 			api.GET("/guests", middleware.RequireRole(models.RoleSuperAdmin, models.RoleHotelManager, models.RoleReceptionist, models.RoleAccountant), handlers.GetGuests)
