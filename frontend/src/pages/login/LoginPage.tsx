@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Building2, CheckCircle2, Eye, EyeOff, LockKeyhole, ShieldCheck, User, UserRound } from 'lucide-react';
+import { ArrowRight, Building2, Eye, EyeOff, LockKeyhole, ShieldCheck, User, UserRound } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import hotelBackground from '../../assets/hotel-login-bg.png';
 
@@ -70,15 +70,14 @@ export const LoginPage: React.FC = () => {
             <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#efc15d] to-transparent" />
             <div className="p-[clamp(1.35rem,5vw,2.25rem)] pt-[clamp(2.25rem,7vw,3.25rem)]">
               <div className="mb-6 flex flex-col items-center text-center">
-                <div className="relative flex h-20 w-20 items-center justify-center rounded-full border border-[#edc46d]/45 bg-[radial-gradient(circle_at_35%_25%,rgba(238,193,93,.28),rgba(7,22,31,.8))] shadow-[0_15px_38px_rgba(0,0,0,.4),0_0_0_8px_rgba(232,179,72,.06)]">
+                <div className="flex h-20 w-20 items-center justify-center rounded-full border border-[#edc46d]/45 bg-[radial-gradient(circle_at_35%_25%,rgba(238,193,93,.2),rgba(7,22,31,.8))] shadow-[0_15px_38px_rgba(0,0,0,.4),0_0_0_8px_rgba(232,179,72,.045)]">
                   <UserRound className="h-10 w-10 text-[#f0c86d]" strokeWidth={1.5} />
-                  <span className="absolute bottom-0.5 right-0.5 h-3.5 w-3.5 rounded-full border-2 border-[#142631] bg-emerald-400" />
                 </div>
-                <div className="mt-4 inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[.18em] text-[#e8bd63]">
+                <div className="mt-4 inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[.22em] text-[#d9b45f]">
                   <ShieldCheck className="h-3.5 w-3.5" /> Secure staff access
                 </div>
-                <h1 id="login-title" className="mt-2 font-serif text-[clamp(1.65rem,6vw,2rem)] font-semibold leading-tight tracking-tight text-[#fff8ed]">Welcome back</h1>
-                <p className="mt-1.5 text-sm leading-6 text-[#aebdc3]">Sign in to HotelOS operations.</p>
+                <h1 id="login-title" className="mt-2 font-serif text-[clamp(1.8rem,6vw,2.15rem)] font-medium leading-tight tracking-[-.025em] text-[#fff8ed]">Welcome back</h1>
+                <p className="mt-2 text-[13px] leading-6 tracking-[.01em] text-[#aebdc3]">Sign in to HotelOS operations.</p>
               </div>
 
               {error && <div id="login-error" role="alert" aria-live="assertive" className="mb-4 rounded-xl border border-rose-400/35 bg-rose-950/45 px-4 py-3 text-sm font-medium text-rose-100">{error}</div>}
@@ -105,7 +104,7 @@ export const LoginPage: React.FC = () => {
                 </label>
 
                 <div className="flex items-center justify-between gap-3 text-[11px]">
-                  <span className="flex items-center gap-2 text-[#9fb0b6]"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> Encrypted session</span>
+                  <span className="flex items-center gap-2 text-[#9fb0b6]"><ShieldCheck className="h-3.5 w-3.5 text-[#cba451]" /> Encrypted session</span>
                   <button type="button" onClick={() => setHelpVisible((visible) => !visible)} className="min-h-11 text-[#d8b866] transition hover:text-[#f1d28b]">Forgot password?</button>
                 </div>
 
@@ -117,7 +116,7 @@ export const LoginPage: React.FC = () => {
 
               <div className="mt-6 border-t border-white/10 pt-5">
                 <div className="mb-3 flex items-center justify-between">
-                  <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[.12em] text-[#b9c6ca]"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> Demo access</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-[.16em] text-[#c4ced1]">Demo access</span>
                   <span className="text-[11px] text-[#82949b]">Select a role</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2">

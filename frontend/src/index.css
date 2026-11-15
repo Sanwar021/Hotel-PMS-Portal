@@ -175,3 +175,9 @@ textarea {
     transition-duration: 0.01ms !important;
   }
 }
+
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-12deg); }
+  75% { transform: rotate(12deg); }
+}
