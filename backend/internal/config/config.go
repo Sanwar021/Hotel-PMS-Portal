@@ -47,7 +47,11 @@ func (c *Config) ValidateProduction() error {
 
 func LoadConfig() *Config {
 	_ = godotenv.Load()
-	appEnv := getEnv("APP_ENV", "development")
+	defaultAppEnv := "development"
+	if os.Getenv("VERCEL_ENV") == "production" {
+		defaultAppEnv = "production"
+	}
+	appEnv := getEnv("APP_ENV", defaultAppEnv)
 	seedDemoData := os.Getenv("SEED_DEMO_DATA") == "true"
 	if os.Getenv("SEED_DEMO_DATA") == "" {
 		seedDemoData = appEnv != "production"
