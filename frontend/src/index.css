@@ -1,0 +1,112 @@
+@import "tailwindcss";
+
+@theme {
+  --color-hotel-bg: #f3f3ed;
+  --color-hotel-panel: #fffefb;
+  --color-hotel-panel2: #f7f7f1;
+  --color-hotel-surface: #edf2ed;
+  --color-hotel-line: #dbe1dc;
+  --color-hotel-text: #163f35;
+  --color-hotel-muted: #6f8079;
+  --color-hotel-accent: #b68a35;
+  --color-hotel-gold: #c6a456;
+  --color-hotel-ink: #112631;
+  --color-hotel-deep: #07161d;
+  --color-hotel-deep2: #173542;
+  --color-hotel-sand: #ede3cf;
+  --color-hotel-paper: #f8f4eb;
+
+  --font-serif: 'Playfair Display', Georgia, serif;
+  --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+}
+
+:root {
+  --admin-bg: #f3f3ed;
+  --admin-panel: #fffefb;
+  --admin-panel2: #f7f7f1;
+  --admin-line: #dbe1dc;
+  --admin-text: #163f35;
+  --admin-muted: #6f8079;
+  --admin-accent: #b68a35;
+  --admin-gold: #c6a456;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background-color: var(--admin-bg);
+  background-image: 
+    radial-gradient(circle at 85% 5%, rgba(31, 102, 82, 0.07), transparent 28%),
+    radial-gradient(circle at 12% 85%, rgba(198, 164, 86, 0.06), transparent 25%);
+  color: var(--admin-text);
+  min-height: 100vh;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #edf0eb;
+}
+::-webkit-scrollbar-thumb {
+  background: #bdc8c2;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(239, 143, 49, 0.35);
+}
+
+.kicker {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--admin-gold);
+}
+
+.glass-header {
+  background-color: rgba(255, 254, 251, 0.9);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--admin-line);
+}
+
+.glass-panel {
+  background-color: var(--admin-panel);
+  border: 1px solid var(--admin-line);
+}
+
+/* Premium light workspace: compatibility layer for existing operational modules. */
+.admin-shell [class*="bg-[#24201c]"] {
+  background-color: var(--admin-panel);
+}
+
+.admin-shell [class*="bg-[#171411]"] {
+  background-color: var(--admin-bg);
+}
+
+.admin-shell [class*="border-white/"] {
+  border-color: var(--admin-line);
+}
+
+.admin-shell [class*="divide-white/"] > :not(:last-child) {
+  border-color: var(--admin-line);
+}
+
+.admin-shell main > div > [class*="rounded-"] {
+  box-shadow: 0 10px 35px rgba(19, 70, 57, 0.045);
+}
+
+.admin-shell input,
+.admin-shell textarea,
+.admin-shell select {
+  color-scheme: light;
+}
+
+@media (max-width: 640px) {
+  .admin-shell table {
+    min-width: 720px;
+  }
+}

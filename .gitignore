@@ -1,0 +1,33 @@
+# Local reference and QA artifacts
+.design-reference/
+Design Premium HotelOS PMS.zip
+*-preview.png
+.chrome-preview-profile/
+.mobile-chrome-profile/
+
+# Runtime logs and local processes
+*.log
+*.pid
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+
+# Dependencies and build output
+node_modules/
+dist/
+coverage/
+
+# Compiled binaries
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Editor and operating-system files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+

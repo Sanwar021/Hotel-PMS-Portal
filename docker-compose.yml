@@ -1,0 +1,37 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: hotelos-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: hotelos
+      POSTGRES_PASSWORD: hotelos_secret_2026
+      POSTGRES_DB: hotelos_db
+    ports:
+      - "5435:5432"
+    volumes:
+      - hotelos_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hotelos -d hotelos_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: hotelos-redis
+    restart: unless-stopped
+    ports:
+      - "6385:6379"
+    volumes:
+      - hotelos_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  hotelos_pg_data:
+  hotelos_redis_data:
+
