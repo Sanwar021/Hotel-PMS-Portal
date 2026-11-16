@@ -35,10 +35,12 @@ export const LoginPage: React.FC = () => {
     try {
       const dashboardModules = preloadDashboard();
       await login({ username, password });
-      await Promise.all([
-        dashboardModules,
-        queryClient.prefetchQuery({ queryKey: ['dashboard', 'today'], queryFn: dashboardApi.getStats }),
-      ]);
+      // Start authenticated data loading immediately, but never hold navigation
+      // behind it. React Query reuses the in-flight request on the dashboard.
+      void dashboardModules.catch(() => undefined);
+      void queryClient
+        .prefetchQuery({ queryKey: ['dashboard', 'today'], queryFn: dashboardApi.getStats })
+        .catch(() => undefined);
       navigate('/');
     } catch (err: any) {
       setError(err.response?.data?.error || 'We could not verify that account and access PIN.');
