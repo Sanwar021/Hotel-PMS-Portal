@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "perf:budget": "node scripts/check-performance-budget.mjs",
+    "perf:login": "node scripts/benchmark-login.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.107.1",
@@ -31,9 +33,10 @@
     "@vitejs/plugin-react": "^6.1.2",
     "autoprefixer": "^10.6.2",
     "oxlint": "^1.90.0",
+    "playwright-core": "^1.65.1",
     "postcss": "^8.5.33",
     "tailwindcss": "^4.3.5",
     "typescript": "~7.0.2",
-    "vite": "^8.3.6"
+    "vite": "8.3.6"
   }
 }

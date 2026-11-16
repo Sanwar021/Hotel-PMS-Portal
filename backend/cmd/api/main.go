@@ -1,6 +1,7 @@
 package main
 
 import (
+	"compress/gzip"
 	"log"
 	"net/http"
 	"os"
@@ -16,6 +17,37 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
+
+type gzipResponseWriter struct {
+	gin.ResponseWriter
+	writer *gzip.Writer
+}
+
+func (w gzipResponseWriter) Write(data []byte) (int, error) {
+	w.Header().Del("Content-Length")
+	return w.writer.Write(data)
+}
+
+func (w gzipResponseWriter) WriteString(data string) (int, error) {
+	w.Header().Del("Content-Length")
+	return w.writer.Write([]byte(data))
+}
+
+func gzipMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if !strings.Contains(c.GetHeader("Accept-Encoding"), "gzip") || c.Request.URL.Path == "/ws" {
+			c.Next()
+			return
+		}
+
+		writer := gzip.NewWriter(c.Writer)
+		defer writer.Close()
+		c.Header("Content-Encoding", "gzip")
+		c.Header("Vary", "Accept-Encoding")
+		c.Writer = gzipResponseWriter{ResponseWriter: c.Writer, writer: writer}
+		c.Next()
+	}
+}
 
 func main() {
 	cfg := config.LoadConfig()
@@ -51,9 +83,12 @@ func main() {
 
 	// 5. Setup Gin Router
 	router := gin.Default()
+	// Compress text responses and built frontend assets. WebSockets bypass this
+	// middleware because their connection is upgraded rather than buffered.
+	router.Use(gzipMiddleware())
 	router.Use(middleware.CORSMiddleware(cfg.CORSOrigin))
 	router.Use(func(c *gin.Context) {
-		if strings.HasPrefix(c.Request.URL.Path, "/assets/") {
+		if strings.HasPrefix(c.Request.URL.Path, "/assets/") || strings.HasPrefix(c.Request.URL.Path, "/fonts/") {
 			// Vite fingerprints production assets, so they are safe to cache for a
 			// year. This makes repeat visits and page chunks effectively instant.
 			c.Header("Cache-Control", "public, max-age=31536000, immutable")
@@ -73,6 +108,7 @@ func main() {
 	if cfg.FrontendDistDir != "" {
 		assetsDir := filepath.Join(cfg.FrontendDistDir, "assets")
 		router.Static("/assets", assetsDir)
+		router.Static("/fonts", filepath.Join(cfg.FrontendDistDir, "fonts"))
 		router.NoRoute(func(c *gin.Context) {
 			if c.Request.Method != http.MethodGet || strings.HasPrefix(c.Request.URL.Path, "/api/") || c.Request.URL.Path == "/ws" || c.Request.URL.Path == "/health" {
 				c.JSON(http.StatusNotFound, gin.H{"error": "Route not found"})

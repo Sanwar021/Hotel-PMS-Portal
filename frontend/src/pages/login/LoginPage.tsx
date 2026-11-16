@@ -1,8 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { ArrowRight, Building2, Eye, EyeOff, LockKeyhole, ShieldCheck, User, UserRound } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import hotelBackground from '../../assets/hotel-login-bg.png';
+import { dashboardApi } from '../../api/endpoints';
+import { preloadDashboard } from '../../preload';
+import hotelBackgroundSmall from '../../assets/hotel-login-bg-640.webp';
+import hotelBackgroundMedium from '../../assets/hotel-login-bg-1280.webp';
+import hotelBackgroundLarge from '../../assets/hotel-login-bg-1920.webp';
 
 const DEMO_USERS = [
   { label: 'Super Admin', username: 'admin' },
@@ -21,13 +26,19 @@ export const LoginPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError(null);
     setLoading(true);
     try {
+      const dashboardModules = preloadDashboard();
       await login({ username, password });
+      await Promise.all([
+        dashboardModules,
+        queryClient.prefetchQuery({ queryKey: ['dashboard', 'today'], queryFn: dashboardApi.getStats }),
+      ]);
       navigate('/');
     } catch (err: any) {
       setError(err.response?.data?.error || 'We could not verify that account and access PIN.');
@@ -43,7 +54,11 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <main className="relative min-h-screen min-h-[100svh] overflow-x-clip overflow-y-auto bg-[#06131d] bg-cover bg-center text-white" style={{ backgroundImage: `url(${hotelBackground})` }}>
+    <main className="relative min-h-screen min-h-[100svh] overflow-x-clip overflow-y-auto bg-[#06131d] text-white">
+      <picture className="absolute inset-0">
+        <source type="image/webp" srcSet={`${hotelBackgroundSmall} 640w, ${hotelBackgroundMedium} 1280w, ${hotelBackgroundLarge} 1672w`} sizes="100vw" />
+        <img src={hotelBackgroundMedium} alt="" aria-hidden="true" fetchPriority="high" decoding="async" className="h-full w-full object-cover object-center" />
+      </picture>
       <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(3,13,22,.55)_0%,rgba(3,13,22,.28)_47%,rgba(3,13,22,.68)_100%)]" />
       <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,14,23,.2)_0%,rgba(4,14,23,.08)_55%,rgba(4,14,23,.72)_100%)]" />
 

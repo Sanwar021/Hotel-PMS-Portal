@@ -1,5 +1,21 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  font-style: normal;
+  font-weight: 300 800;
+  font-display: swap;
+  src: url('/fonts/plus-jakarta-sans-latin-v12.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: normal;
+  font-weight: 400 900;
+  font-display: swap;
+  src: url('/fonts/playfair-display-latin-v40.woff2') format('woff2');
+}
+
 @theme {
   --color-hotel-bg: #f4f3ee;
   --color-hotel-panel: #fffefb;
@@ -21,6 +37,7 @@
 }
 
 :root {
+  --hotel-background-image: url('./assets/hotel-login-bg-640.webp');
   --admin-bg: #f4f3ee;
   --admin-panel: #fffefb;
   --admin-panel2: #f8f7f3;
@@ -29,6 +46,14 @@
   --admin-muted: #65756f;
   --admin-accent: #a9752e;
   --admin-gold: #b7893e;
+}
+
+@media (min-width: 700px) {
+  :root { --hotel-background-image: url('./assets/hotel-login-bg-1280.webp'); }
+}
+
+@media (min-width: 1400px) {
+  :root { --hotel-background-image: url('./assets/hotel-login-bg-1920.webp'); }
 }
 
 body {
@@ -233,7 +258,7 @@ textarea {
   border-radius: 1.75rem;
   background:
     linear-gradient(135deg, rgba(10, 25, 35, 0.32), rgba(20, 38, 48, 0.15)),
-    url('./assets/hotel-login-bg.png') center / cover fixed;
+    var(--hotel-background-image) center / cover fixed;
   box-shadow: 0 24px 70px rgba(12, 30, 38, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.58);
 }
 
@@ -305,7 +330,7 @@ textarea {
   isolation: isolate;
   background:
     linear-gradient(135deg, rgba(8, 23, 31, 0.26), rgba(228, 236, 239, 0.18)),
-    url('./assets/hotel-login-bg.png') center / cover fixed;
+    var(--hotel-background-image) center / cover fixed;
 }
 
 .premium-glass-shell::before {
