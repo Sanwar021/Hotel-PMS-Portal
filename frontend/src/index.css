@@ -298,3 +298,112 @@ textarea {
   .dashboard-glass > * { animation: none !important; }
   .dashboard-glass [class~="bg-hotel-panel"]:hover { transform: none; }
 }
+
+/* Shared premium glass shell: applies to every authenticated module and role. */
+.premium-glass-shell {
+  position: relative;
+  isolation: isolate;
+  background:
+    linear-gradient(135deg, rgba(8, 23, 31, 0.26), rgba(228, 236, 239, 0.18)),
+    url('./assets/hotel-login-bg.png') center / cover fixed;
+}
+
+.premium-glass-shell::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(115deg, rgba(8, 28, 35, 0.22), rgba(238, 243, 243, 0.34) 42%, rgba(222, 231, 233, 0.2));
+}
+
+.glass-sidebar {
+  background: linear-gradient(180deg, rgba(5, 51, 44, 0.94), rgba(5, 38, 37, 0.91));
+  backdrop-filter: blur(24px) saturate(125%);
+  -webkit-backdrop-filter: blur(24px) saturate(125%);
+  box-shadow: 18px 0 60px rgba(2, 17, 22, 0.25), inset -1px 0 0 rgba(255, 255, 255, 0.1);
+}
+
+.glass-sidebar nav a,
+.glass-sidebar button,
+.glass-sidebar > div {
+  will-change: transform;
+}
+
+.glass-sidebar nav a:hover { transform: translateX(2px); }
+
+.glass-topbar {
+  background: linear-gradient(100deg, rgba(250, 252, 251, 0.89), rgba(235, 242, 243, 0.8));
+  backdrop-filter: blur(24px) saturate(145%);
+  -webkit-backdrop-filter: blur(24px) saturate(145%);
+}
+
+.glass-workspace {
+  min-height: calc(100vh - 68px);
+}
+
+.glass-workspace > *:not(.dashboard-glass) {
+  animation: workspace-enter 480ms cubic-bezier(.2, .8, .2, 1) both;
+}
+
+.glass-workspace > *:not(.dashboard-glass) [class~="bg-hotel-panel"],
+.glass-workspace > *:not(.dashboard-glass) [class~="bg-hotel-panel2"],
+.glass-workspace > *:not(.dashboard-glass) [role="dialog"] {
+  border-color: rgba(255, 255, 255, 0.62) !important;
+  background: linear-gradient(145deg, rgba(255, 255, 253, 0.92), rgba(231, 239, 240, 0.84)) !important;
+  box-shadow: 0 16px 42px rgba(6, 25, 32, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.92) !important;
+  backdrop-filter: blur(22px) saturate(135%);
+  -webkit-backdrop-filter: blur(22px) saturate(135%);
+}
+
+.glass-workspace > *:not(.dashboard-glass) [class~="bg-hotel-panel"] {
+  transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+}
+
+.glass-workspace > *:not(.dashboard-glass) [class~="bg-hotel-panel"]:hover {
+  border-color: rgba(255, 255, 255, 0.86) !important;
+  box-shadow: 0 20px 48px rgba(6, 25, 32, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+}
+
+.glass-workspace input,
+.glass-workspace select,
+.glass-workspace textarea,
+.glass-topbar input {
+  border-color: rgba(93, 116, 116, 0.28) !important;
+  background-color: rgba(255, 255, 255, 0.7) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(12px);
+}
+
+.glass-workspace table thead {
+  background: rgba(240, 245, 244, 0.64);
+}
+
+.glass-workspace table tbody tr {
+  transition: background-color 160ms ease;
+}
+
+.glass-workspace table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.5) !important;
+}
+
+.glass-topbar [class~="bg-white"],
+.glass-topbar [class*="bg-[#fffefb]"] {
+  background-color: rgba(255, 255, 255, 0.82) !important;
+  backdrop-filter: blur(18px);
+}
+
+@keyframes workspace-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 1023px) {
+  .premium-glass-shell { background-attachment: scroll; }
+  .glass-sidebar { box-shadow: 22px 0 70px rgba(2, 17, 22, 0.34); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glass-workspace > * { animation: none !important; }
+  .glass-sidebar nav a:hover { transform: none; }
+}

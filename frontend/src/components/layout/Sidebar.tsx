@@ -76,7 +76,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, collapsed, onClose, onTo
   const { user, logout } = useAuth();
 
   return (
-    <aside className={`fixed inset-y-0 left-0 z-40 flex flex-col border-r border-hotel-line bg-[#083d32] text-white shadow-[18px_0_55px_rgba(5,35,29,.14)] transition-all duration-300 ${collapsed ? 'w-[82px]' : 'w-64'} ${open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+    <aside className={`glass-sidebar fixed inset-y-0 left-0 z-40 flex flex-col border-r border-white/15 text-white shadow-[18px_0_55px_rgba(5,18,25,.22)] transition-all duration-300 ${collapsed ? 'w-[82px]' : 'w-64'} ${open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
       {/* Brand Header */}
       <div className={`flex h-[68px] items-center border-b border-hotel-line ${collapsed ? 'justify-center px-3' : 'gap-3 px-5'}`}>
         <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-hotel-accent to-hotel-gold shadow-[0_0_15px_rgba(239,143,49,0.3)]">
@@ -126,8 +126,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, collapsed, onClose, onTo
                       'group flex items-center rounded-lg py-2.5 text-xs font-medium transition-all duration-200',
                       collapsed ? 'justify-center px-2' : 'gap-3 px-3',
                       isActive
-                        ? 'bg-[#f5f0e3] text-[#124c40] font-semibold shadow-[0_8px_20px_rgba(0,0,0,.12)]'
-                        : 'text-white/68 hover:bg-white/[0.07] hover:text-white'
+                        ? 'bg-white/88 text-[#123b3a] font-semibold shadow-[0_10px_24px_rgba(0,0,0,.16),inset_0_1px_0_rgba(255,255,255,.8)]'
+                        : 'text-white/72 hover:bg-white/[0.11] hover:text-white'
                     )
                   }
                 >

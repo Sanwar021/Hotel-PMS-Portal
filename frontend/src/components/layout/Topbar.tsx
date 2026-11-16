@@ -174,7 +174,7 @@ export const Topbar: React.FC<TopbarProps> = ({
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   return (
-    <header className="sticky top-0 z-20 flex h-[68px] w-full items-center justify-between border-b border-hotel-line bg-[#fffefb]/92 px-3 shadow-[0_7px_25px_rgba(18,62,51,.05)] backdrop-blur-xl sm:px-5">
+    <header className="glass-topbar sticky top-0 z-20 flex h-[68px] w-full items-center justify-between border-b border-white/45 px-3 shadow-[0_10px_35px_rgba(8,28,37,.1)] sm:px-5">
       {/* Search Input */}
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <button onClick={onOpenMenu} className="rounded-lg border border-hotel-line bg-white p-2 text-[#174b40] lg:hidden" aria-label="Open menu"><Menu className="h-5 w-5" /></button>

@@ -69,7 +69,7 @@ export const AppLayout: React.FC = () => {
   };
 
   return (
-    <div className="admin-shell min-h-screen bg-hotel-bg text-hotel-text">
+    <div className="admin-shell premium-glass-shell min-h-screen text-hotel-text">
       <Sidebar
         open={sidebarOpen}
         collapsed={sidebarCollapsed}
@@ -84,7 +84,7 @@ export const AppLayout: React.FC = () => {
           onQuickCheckIn={() => navigate('/frontdesk')}
           onQuickOrder={() => navigate('/restaurant')}
         />
-        <main className="mx-auto max-w-[1680px] p-4 sm:p-6 lg:p-7">
+        <main className="glass-workspace mx-auto max-w-[1680px] p-4 sm:p-6 lg:p-7">
           <Outlet />
         </main>
       </div>
