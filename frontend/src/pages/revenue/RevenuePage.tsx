@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   TrendingUp,
@@ -12,8 +12,13 @@ import {
 import { dashboardApi, roomsApi } from '../../api/endpoints';
 import { PageHeader } from '../../components/common/PageHeader';
 import { StatCard } from '../../components/common/StatCard';
+import { SearchSortControls } from '../../components/common/SearchSortControls';
 
 export const RevenuePage: React.FC = () => {
+  const [rateSearch, setRateSearch] = useState('');
+  const [rateSort, setRateSort] = useState('name');
+  const [roomSearch, setRoomSearch] = useState('');
+  const [roomSort, setRoomSort] = useState('name');
   const { data: dashboardData } = useQuery({
     queryKey: ['dashboard'],
     queryFn: dashboardApi.getStats,
@@ -64,6 +69,21 @@ export const RevenuePage: React.FC = () => {
       active: true,
     },
   ];
+  const visibleRatePlans = ratePlans.filter((plan) =>
+    `${plan.name} ${plan.code} ${plan.mealPlan} ${plan.channel} ${plan.modifier}`.toLowerCase().includes(rateSearch.toLowerCase())
+  ).sort((a, b) => rateSort === 'channel'
+    ? a.channel.localeCompare(b.channel)
+    : rateSort === 'meal'
+      ? a.mealPlan.localeCompare(b.mealPlan)
+      : a.name.localeCompare(b.name));
+  const visibleRoomTypes = roomTypes.filter((roomType) =>
+    `${roomType.name} ${roomType.code} ${roomType.bed_type}`.toLowerCase().includes(roomSearch.toLowerCase())
+  ).sort((a, b) => {
+    if (roomSort === 'price_high') return b.base_price - a.base_price;
+    if (roomSort === 'price_low') return a.base_price - b.base_price;
+    if (roomSort === 'capacity') return b.max_occupancy - a.max_occupancy;
+    return a.name.localeCompare(b.name);
+  });
 
   return (
     <div className="space-y-6">
@@ -107,6 +127,10 @@ export const RevenuePage: React.FC = () => {
           </div>
         </div>
 
+        <div className="mt-4">
+          <SearchSortControls compact search={rateSearch} onSearchChange={setRateSearch} sort={rateSort} onSortChange={setRateSort} resultCount={visibleRatePlans.length} placeholder="Search rate plan, code, meal plan or channel..." sortOptions={[{ value: 'name', label: 'Rate plan A–Z' }, { value: 'meal', label: 'Meal plan A–Z' }, { value: 'channel', label: 'Channel A–Z' }]} />
+        </div>
+
         <div className="mt-4 overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead>
@@ -120,7 +144,7 @@ export const RevenuePage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-hotel-line">
-              {ratePlans.map((plan) => (
+              {visibleRatePlans.map((plan) => (
                 <tr key={plan.code} className="hover:bg-[#f7f8f4] transition-colors">
                   <td className="py-3.5">
                     <div className="font-semibold text-hotel-text">{plan.name}</div>
@@ -149,8 +173,12 @@ export const RevenuePage: React.FC = () => {
           <h3 className="font-serif text-lg font-bold text-hotel-text">Base & Weekend Pricing Matrix</h3>
         </div>
 
+        <div className="mt-4">
+          <SearchSortControls compact search={roomSearch} onSearchChange={setRoomSearch} sort={roomSort} onSortChange={setRoomSort} resultCount={visibleRoomTypes.length} placeholder="Search room category, code or bed type..." sortOptions={[{ value: 'name', label: 'Room category A–Z' }, { value: 'price_low', label: 'Rate low to high' }, { value: 'price_high', label: 'Rate high to low' }, { value: 'capacity', label: 'Highest capacity' }]} />
+        </div>
+
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {roomTypes.map((rt) => (
+          {visibleRoomTypes.map((rt) => (
             <div
               key={rt.id}
               className="rounded-xl border border-hotel-line bg-white/[0.02] p-4 text-xs space-y-2"

@@ -14,11 +14,14 @@ import { reservationsApi } from '../../api/endpoints';
 import { PageHeader } from '../../components/common/PageHeader';
 import { StatusBadge } from '../../components/common/StatusBadge';
 import { Modal } from '../../components/common/Modal';
+import { SearchSortControls } from '../../components/common/SearchSortControls';
 
 export const CalendarPage: React.FC = () => {
   const [baseDate, setBaseDate] = useState<Date>(new Date());
   const [floorFilter, setFloorFilter] = useState<number>(0); // 0 = all floors
   const [selectedBooking, setSelectedBooking] = useState<any | null>(null);
+  const [search, setSearch] = useState('');
+  const [sort, setSort] = useState('room_asc');
 
   const { data: timeline = [], isLoading } = useQuery({
     queryKey: ['calendar_timeline'],
@@ -49,9 +52,19 @@ export const CalendarPage: React.FC = () => {
     setBaseDate(new Date());
   };
 
-  const filteredTimeline = floorFilter === 0
+  const floorTimeline = floorFilter === 0
     ? timeline
     : timeline.filter((room: any) => room.floor === floorFilter);
+  const filteredTimeline = floorTimeline.filter((room: any) =>
+    `${room.room_number} ${room.room_type_name} ${room.status} ${room.bookings?.map((booking: any) => `${booking.guest_name} ${booking.reservation_number}`).join(' ') || ''}`
+      .toLowerCase()
+      .includes(search.toLowerCase())
+  ).sort((a: any, b: any) => {
+    if (sort === 'room_desc') return b.room_number.localeCompare(a.room_number, undefined, { numeric: true });
+    if (sort === 'type') return (a.room_type_name || '').localeCompare(b.room_type_name || '');
+    if (sort === 'status') return (a.status || '').localeCompare(b.status || '');
+    return a.room_number.localeCompare(b.room_number, undefined, { numeric: true });
+  });
 
   return (
     <div className="space-y-6">
@@ -97,6 +110,21 @@ export const CalendarPage: React.FC = () => {
             </div>
           </div>
         }
+      />
+
+      <SearchSortControls
+        search={search}
+        onSearchChange={setSearch}
+        sort={sort}
+        onSortChange={setSort}
+        resultCount={filteredTimeline.length}
+        placeholder="Search room, category, guest or booking #..."
+        sortOptions={[
+          { value: 'room_asc', label: 'Room number ascending' },
+          { value: 'room_desc', label: 'Room number descending' },
+          { value: 'type', label: 'Room category A–Z' },
+          { value: 'status', label: 'Room status A–Z' },
+        ]}
       />
 
       {/* Timeline Grid */}

@@ -28,6 +28,7 @@ export const RestaurantPage: React.FC = () => {
   const [selectedRoomId, setSelectedRoomId] = useState<string>('');
   const [orderNotes, setOrderNotes] = useState<string>('');
   const [menuSearch, setMenuSearch] = useState('');
+  const [menuSort, setMenuSort] = useState('name');
   const [orderSearch, setOrderSearch] = useState('');
   const [orderSort, setOrderSort] = useState('newest');
 
@@ -119,7 +120,16 @@ export const RestaurantPage: React.FC = () => {
 
   const displayedCategories = (selectedCategory
     ? categories.filter((c) => c.id === selectedCategory)
-    : categories).map((category) => ({ ...category, menu_items: category.menu_items?.filter((item) => `${item.name} ${item.description}`.toLowerCase().includes(menuSearch.toLowerCase())) }));
+    : categories).map((category) => ({
+      ...category,
+      menu_items: category.menu_items
+        ?.filter((item) => `${item.name} ${item.description}`.toLowerCase().includes(menuSearch.toLowerCase()))
+        .sort((a, b) => menuSort === 'price_high'
+          ? b.price - a.price
+          : menuSort === 'price_low'
+            ? a.price - b.price
+            : a.name.localeCompare(b.name)),
+    }));
   const visibleOrders = orders.filter((order) => `${order.order_number} ${order.order_type} ${order.status} ${order.room?.room_number || ''} ${order.table?.table_number || ''} ${order.items?.map((item) => item.item_name).join(' ') || ''}`.toLowerCase().includes(orderSearch.toLowerCase())).sort((a, b) => {
     if (orderSort === 'amount') return b.total - a.total;
     if (orderSort === 'status') return a.status.localeCompare(b.status);
@@ -139,7 +149,7 @@ export const RestaurantPage: React.FC = () => {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Left Column: Menu Categories & Items */}
         <div className="space-y-4 lg:col-span-2">
-          <SearchSortControls compact search={menuSearch} onSearchChange={setMenuSearch} sort="name" onSortChange={() => undefined} placeholder="Search menu item or description..." sortOptions={[{ value: 'name', label: 'Menu items' }]} />
+          <SearchSortControls compact search={menuSearch} onSearchChange={setMenuSearch} sort={menuSort} onSortChange={setMenuSort} placeholder="Search menu item or description..." sortOptions={[{ value: 'name', label: 'Item name A–Z' }, { value: 'price_low', label: 'Price low to high' }, { value: 'price_high', label: 'Price high to low' }]} />
           {/* Categories Tab Selector */}
           <div className="flex flex-wrap gap-2 border-b border-hotel-line pb-3">
             <button
