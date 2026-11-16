@@ -42,6 +42,9 @@ func main() {
 	} else if err := database.BootstrapProduction(db, cfg); err != nil {
 		log.Fatalf("Production bootstrap failed: %v", err)
 	}
+	if err := database.ProvisionManager(db, cfg); err != nil {
+		log.Fatalf("Manager provisioning failed: %v", err)
+	}
 
 	// 4. Initialize WebSocket Hub
 	wsHub := websocket.InitHub(cfg)
@@ -174,6 +177,10 @@ func main() {
 			api.GET("/settings/hotel", handlers.GetHotelSettings)
 			api.PUT("/settings/hotel", middleware.RequireRole(models.RoleSuperAdmin, models.RoleHotelOwner, models.RoleGeneralManager), handlers.UpdateHotelSettings)
 			api.GET("/settings/audit-logs", middleware.RequireRole(models.RoleSuperAdmin, models.RoleHotelOwner, models.RoleGeneralManager, models.RoleHotelManager), handlers.GetAuditLogs)
+			api.GET("/settings/users", middleware.RequireRole(models.RoleSuperAdmin, models.RoleHotelManager), handlers.GetUsers)
+			api.POST("/settings/users", middleware.RequireRole(models.RoleSuperAdmin, models.RoleHotelManager), handlers.CreateUser)
+			api.PUT("/settings/users/:id", middleware.RequireRole(models.RoleSuperAdmin, models.RoleHotelManager), handlers.UpdateUser)
+			api.DELETE("/settings/users/:id", middleware.RequireRole(models.RoleSuperAdmin, models.RoleHotelManager), handlers.DeleteUser)
 			api.GET("/notifications", handlers.GetNotifications)
 			api.PATCH("/notifications/:id/read", handlers.MarkNotificationAsRead)
 		}

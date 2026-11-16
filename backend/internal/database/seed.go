@@ -67,7 +67,7 @@ func SeedDatabase(db *gorm.DB) error {
 			HotelID:      &hotel.ID,
 			Username:     "manager",
 			Email:        "manager@hotelos.com",
-			PasswordHash: hashPassword("HotelOS#Manager26"),
+			PasswordHash: hashPassword("3400"),
 			FirstName:    "Shahriar",
 			LastName:     "Khan",
 			Role:         models.RoleHotelManager,

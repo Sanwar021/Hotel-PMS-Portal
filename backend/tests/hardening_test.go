@@ -115,3 +115,27 @@ func TestRoleMiddlewareRejectsUnauthorizedRole(t *testing.T) {
 		t.Fatalf("expected role mismatch to return 403, got %d", w.Code)
 	}
 }
+
+func TestManagerRoleHasAdministrativeOverride(t *testing.T) {
+	_ = setupTestRouter()
+	cfg := config.LoadConfig()
+	var manager models.User
+	if err := database.DB.Where("role = ?", models.RoleHotelManager).First(&manager).Error; err != nil {
+		t.Fatal(err)
+	}
+	token, err := middleware.GenerateToken(&manager, cfg.JWTSecret, cfg.JWTExpiresIn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := gin.New()
+	// Deliberately require a role that Manager does not have. The administrative
+	// override must still authorize the request, just as it does for Super Admin.
+	r.GET("/supervised-operation", middleware.AuthMiddleware(cfg.JWTSecret), middleware.RequireRole(models.RoleAccountant), func(c *gin.Context) { c.Status(http.StatusNoContent) })
+	req, _ := http.NewRequest(http.MethodGet, "/supervised-operation", nil)
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusNoContent {
+		t.Fatalf("expected Manager administrative override to return 204, got %d: %s", w.Code, w.Body.String())
+	}
+}

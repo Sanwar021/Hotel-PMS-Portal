@@ -6,6 +6,7 @@ import hotelBackground from '../../assets/hotel-login-bg.png';
 
 const DEMO_USERS = [
   { label: 'Super Admin', username: 'admin' },
+  { label: 'Manager', username: 'manager' },
   { label: 'Reception', username: 'reception' },
   { label: 'Accounts', username: 'accountant' },
   { label: 'Housekeeping', username: 'housekeeping' },

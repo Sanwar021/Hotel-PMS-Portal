@@ -10,17 +10,39 @@ import {
   Clock,
   DollarSign,
   Percent,
+  Plus,
+  Pencil,
+  Trash2,
+  Users,
 } from 'lucide-react';
-import { settingsApi } from '../../api/endpoints';
+import { settingsApi, StaffAccountInput } from '../../api/endpoints';
 import { PageHeader } from '../../components/common/PageHeader';
-import { Hotel, AuditLogItem } from '../../types';
+import { Hotel, AuditLogItem, User, UserRole } from '../../types';
 import { SearchSortControls } from '../../components/common/SearchSortControls';
+import { Modal } from '../../components/common/Modal';
+import { useAuth } from '../../contexts/AuthContext';
+
+const USER_ROLES: { value: UserRole; label: string }[] = [
+  { value: 'hotel_manager', label: 'Manager' }, { value: 'general_manager', label: 'General Manager' },
+  { value: 'receptionist', label: 'Reception' }, { value: 'accountant', label: 'Accounts' },
+  { value: 'housekeeping_staff', label: 'Housekeeping' }, { value: 'restaurant_manager', label: 'Restaurant Manager' },
+  { value: 'restaurant_staff', label: 'Restaurant Staff' }, { value: 'inventory_manager', label: 'Inventory Manager' },
+  { value: 'maintenance_staff', label: 'Maintenance' },
+];
+
+const blankAccount: StaffAccountInput = { username: '', email: '', first_name: '', last_name: '', role: 'receptionist', access_pin: '', is_active: true };
 
 export const SettingsPage: React.FC = () => {
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<'hotel' | 'audit'>('hotel');
+  const { user: signedInUser } = useAuth();
+  const [activeTab, setActiveTab] = useState<'hotel' | 'users' | 'audit'>('hotel');
   const [auditSearch, setAuditSearch] = useState('');
   const [auditSort, setAuditSort] = useState('newest');
+  const [userSearch, setUserSearch] = useState('');
+  const [userSort, setUserSort] = useState('name');
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [accountForm, setAccountForm] = useState<StaffAccountInput>(blankAccount);
+  const [accountModalOpen, setAccountModalOpen] = useState(false);
 
   const { data: hotel, isLoading } = useQuery({
     queryKey: ['hotel_settings'],
@@ -32,6 +54,8 @@ export const SettingsPage: React.FC = () => {
     queryFn: settingsApi.getAuditLogs,
     enabled: activeTab === 'audit',
   });
+  const { data: users = [] } = useQuery({ queryKey: ['staff_users'], queryFn: settingsApi.getUsers, enabled: activeTab === 'users' });
+  const visibleUsers = users.filter((staff) => `${staff.first_name} ${staff.last_name} ${staff.username} ${staff.email} ${staff.role}`.toLowerCase().includes(userSearch.toLowerCase())).sort((a, b) => userSort === 'role' ? a.role.localeCompare(b.role) : userSort === 'status' ? Number(b.is_active) - Number(a.is_active) : `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`));
   const visibleAuditLogs = auditLogs.filter((log) => `${log.action} ${log.entity_type} ${log.entity_id} ${log.details} ${log.user?.username || 'system'}`.toLowerCase().includes(auditSearch.toLowerCase())).sort((a, b) => auditSort === 'oldest' ? new Date(a.created_at).getTime() - new Date(b.created_at).getTime() : auditSort === 'actor' ? (a.user?.username || 'System').localeCompare(b.user?.username || 'System') : auditSort === 'action' ? a.action.localeCompare(b.action) : new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   const [form, setForm] = useState({
@@ -89,6 +113,28 @@ export const SettingsPage: React.FC = () => {
     }
   };
 
+  const openAccount = (staff?: User) => {
+    setEditingUser(staff || null);
+    setAccountForm(staff ? { username: staff.username, email: staff.email, first_name: staff.first_name, last_name: staff.last_name, role: staff.role, access_pin: '', is_active: staff.is_active } : blankAccount);
+    setAccountModalOpen(true);
+  };
+
+  const saveAccount = async (event: React.FormEvent) => {
+    event.preventDefault();
+    try {
+      if (editingUser) await settingsApi.updateUser(editingUser.id, accountForm);
+      else await settingsApi.createUser(accountForm);
+      setAccountModalOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['staff_users'] });
+    } catch (err: any) { alert(err.response?.data?.error || 'Failed to save staff account'); }
+  };
+
+  const deleteAccount = async (staff: User) => {
+    if (!window.confirm(`Delete ${staff.first_name} ${staff.last_name}'s staff account?`)) return;
+    try { await settingsApi.deleteUser(staff.id); queryClient.invalidateQueries({ queryKey: ['staff_users'] }); }
+    catch (err: any) { alert(err.response?.data?.error || 'Failed to delete staff account'); }
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -108,6 +154,12 @@ export const SettingsPage: React.FC = () => {
           }`}
         >
           Hotel Profile & Policies
+        </button>
+        <button
+          onClick={() => setActiveTab('users')}
+          className={`rounded-xl px-4 py-2 text-xs font-semibold transition-all ${activeTab === 'users' ? 'bg-hotel-accent text-[#14110f] shadow-[0_2px_12px_rgba(239,143,49,0.3)]' : 'border border-hotel-line bg-hotel-panel text-hotel-muted hover:text-hotel-text'}`}
+        >
+          Staff Accounts
         </button>
         <button
           onClick={() => setActiveTab('audit')}
@@ -228,6 +280,16 @@ export const SettingsPage: React.FC = () => {
         </form>
       )}
 
+      {activeTab === 'users' && (
+        <div className="rounded-2xl border border-hotel-line bg-hotel-panel overflow-hidden">
+          <div className="flex flex-col gap-4 border-b border-hotel-line p-4 lg:flex-row lg:items-end lg:justify-between">
+            <div className="flex-1"><span className="kicker">Access Control</span><h3 className="font-serif text-lg font-bold text-hotel-text">Staff Account Management</h3><div className="mt-4"><SearchSortControls compact search={userSearch} onSearchChange={setUserSearch} sort={userSort} onSortChange={setUserSort} resultCount={visibleUsers.length} placeholder="Search staff name, username, email or role..." sortOptions={[{ value: 'name', label: 'Staff name A–Z' }, { value: 'role', label: 'Role A–Z' }, { value: 'status', label: 'Active accounts first' }]} /></div></div>
+            <button onClick={() => openAccount()} className="flex h-10 items-center justify-center gap-2 rounded-lg bg-hotel-accent px-4 text-xs font-bold text-[#14110f]"><Plus className="h-4 w-4" /> Add Staff Account</button>
+          </div>
+          <div className="overflow-x-auto"><table className="w-full text-left text-xs"><thead><tr className="border-b border-hotel-line bg-white/[0.02] text-[11px] uppercase tracking-wider text-hotel-muted"><th className="px-4 py-3">Staff member</th><th className="px-4 py-3">Username</th><th className="px-4 py-3">Role</th><th className="px-4 py-3">Status</th><th className="px-4 py-3 text-right">Actions</th></tr></thead><tbody className="divide-y divide-hotel-line">{visibleUsers.map((staff) => { const protectedAdmin = staff.role === 'super_admin' && signedInUser?.role !== 'super_admin'; return <tr key={staff.id} className="hover:bg-[#f7f8f4]"><td className="px-4 py-3"><div className="font-semibold text-hotel-text">{staff.first_name} {staff.last_name}</div><div className="text-[10px] text-hotel-muted">{staff.email}</div></td><td className="px-4 py-3 font-mono text-hotel-accent">{staff.username}</td><td className="px-4 py-3 capitalize text-hotel-text">{staff.role.replace(/_/g, ' ')}</td><td className="px-4 py-3"><span className={`rounded-full px-2 py-1 text-[10px] font-bold ${staff.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>{staff.is_active ? 'Active' : 'Disabled'}</span></td><td className="px-4 py-3"><div className="flex justify-end gap-2"><button disabled={protectedAdmin} onClick={() => openAccount(staff)} className="rounded-lg border border-hotel-line p-2 text-hotel-text disabled:cursor-not-allowed disabled:opacity-35" title={protectedAdmin ? 'Super Admin is protected' : 'Edit account'}><Pencil className="h-3.5 w-3.5" /></button><button disabled={protectedAdmin || staff.id === signedInUser?.id} onClick={() => deleteAccount(staff)} className="rounded-lg border border-rose-200 p-2 text-rose-600 disabled:cursor-not-allowed disabled:opacity-35" title="Delete account"><Trash2 className="h-3.5 w-3.5" /></button></div></td></tr>; })}</tbody></table></div>
+        </div>
+      )}
+
       {activeTab === 'audit' && (
         <div className="rounded-2xl border border-hotel-line bg-hotel-panel overflow-hidden">
           <div className="p-4 border-b border-hotel-line">
@@ -273,6 +335,16 @@ export const SettingsPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      <Modal isOpen={accountModalOpen} onClose={() => setAccountModalOpen(false)} title={editingUser ? 'Edit Staff Account' : 'Add Staff Account'} subtitle="Manager-controlled system access" maxWidth="lg">
+        <form onSubmit={saveAccount} className="grid grid-cols-1 gap-4 text-xs sm:grid-cols-2">
+          {([['first_name','First name'],['last_name','Last name'],['username','Username'],['email','Email']] as const).map(([field, label]) => <label key={field}><span className="mb-1 block font-medium text-hotel-muted">{label}</span><input required type={field === 'email' ? 'email' : 'text'} value={accountForm[field]} onChange={(e) => setAccountForm({ ...accountForm, [field]: e.target.value })} className="w-full rounded-lg border border-hotel-line bg-hotel-panel p-2.5 text-hotel-text outline-none focus:border-hotel-accent" /></label>)}
+          <label><span className="mb-1 block font-medium text-hotel-muted">Role</span><select value={accountForm.role} onChange={(e) => setAccountForm({ ...accountForm, role: e.target.value as UserRole })} className="w-full rounded-lg border border-hotel-line bg-hotel-panel p-2.5 text-hotel-text">{USER_ROLES.map((role) => <option key={role.value} value={role.value}>{role.label}</option>)}</select></label>
+          <label><span className="mb-1 block font-medium text-hotel-muted">{editingUser ? 'New PIN (optional)' : '4-digit access PIN'}</span><input required={!editingUser} inputMode="numeric" pattern="[0-9]{4}" maxLength={4} value={accountForm.access_pin || ''} onChange={(e) => setAccountForm({ ...accountForm, access_pin: e.target.value.replace(/\D/g, '').slice(0, 4) })} className="w-full rounded-lg border border-hotel-line bg-hotel-panel p-2.5 text-hotel-text outline-none focus:border-hotel-accent" /></label>
+          <label className="flex items-center gap-2 sm:col-span-2"><input type="checkbox" checked={accountForm.is_active} onChange={(e) => setAccountForm({ ...accountForm, is_active: e.target.checked })} /> Active account</label>
+          <div className="flex justify-end gap-2 border-t border-hotel-line pt-4 sm:col-span-2"><button type="button" onClick={() => setAccountModalOpen(false)} className="rounded-lg border border-hotel-line px-4 py-2 text-hotel-muted">Cancel</button><button type="submit" className="rounded-lg bg-hotel-accent px-5 py-2 font-bold text-[#14110f]">{editingUser ? 'Save Changes' : 'Create Account'}</button></div>
+        </form>
+      </Modal>
     </div>
   );
 };

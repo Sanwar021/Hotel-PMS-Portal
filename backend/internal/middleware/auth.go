@@ -109,8 +109,10 @@ func RequireRole(allowedRoles ...models.UserRole) gin.HandlerFunc {
 		}
 
 		userRole := roleVal.(models.UserRole)
-		// Super admin always has full privileges
-		if userRole == models.RoleSuperAdmin {
+		// Super Admin and Hotel Manager are system-wide administrative roles.
+		// Keeping this override centralized ensures new protected routes inherit
+		// the same authorization policy without relying on frontend visibility.
+		if userRole == models.RoleSuperAdmin || userRole == models.RoleHotelManager {
 			c.Next()
 			return
 		}

@@ -21,6 +21,8 @@ import {
   Hotel,
   AuditLogItem,
   NotificationItem,
+  User,
+  UserRole,
 } from '../types';
 
 export const authApi = {
@@ -301,5 +303,31 @@ export const settingsApi = {
     const res = await apiClient.patch(`/notifications/${id}/read`);
     return res.data;
   },
+  getUsers: async (): Promise<User[]> => {
+    const res = await apiClient.get('/settings/users');
+    return res.data.users ?? [];
+  },
+  createUser: async (data: StaffAccountInput): Promise<User> => {
+    const res = await apiClient.post('/settings/users', data);
+    return res.data.user;
+  },
+  updateUser: async (id: string, data: StaffAccountInput): Promise<User> => {
+    const res = await apiClient.put(`/settings/users/${id}`, data);
+    return res.data.user;
+  },
+  deleteUser: async (id: string) => {
+    const res = await apiClient.delete(`/settings/users/${id}`);
+    return res.data;
+  },
 };
+
+export interface StaffAccountInput {
+  username: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  role: UserRole;
+  access_pin?: string;
+  is_active: boolean;
+}
 
