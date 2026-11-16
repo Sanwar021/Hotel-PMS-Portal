@@ -12,7 +12,7 @@ export const AppLayout: React.FC = () => {
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
 
   // Load room types
   const { data: roomTypes = [] } = useQuery({
@@ -77,9 +77,12 @@ export const AppLayout: React.FC = () => {
         onToggleCollapse={() => setSidebarCollapsed((value) => !value)}
       />
       {sidebarOpen && <button aria-label="Close navigation" onClick={() => setSidebarOpen(false)} className="fixed inset-0 z-30 bg-[#06231d]/55 backdrop-blur-sm lg:hidden" />}
-      <div className={`min-h-screen transition-[padding] duration-300 ${sidebarCollapsed ? 'lg:pl-[82px]' : 'lg:pl-64'}`}>
+      <div className={`min-h-screen transition-[padding] duration-300 ${sidebarCollapsed ? 'lg:pl-[102px]' : 'lg:pl-[276px]'}`}>
         <Topbar
-          onOpenMenu={() => setSidebarOpen(true)}
+          onOpenMenu={() => {
+            setSidebarOpen(true);
+            setSidebarCollapsed(false);
+          }}
           onQuickBooking={() => setIsBookingModalOpen(true)}
           onQuickCheckIn={() => navigate('/frontdesk')}
           onQuickOrder={() => navigate('/restaurant')}

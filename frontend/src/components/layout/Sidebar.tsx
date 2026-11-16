@@ -76,9 +76,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, collapsed, onClose, onTo
   const { user, logout } = useAuth();
 
   return (
-    <aside className={`glass-sidebar fixed inset-y-0 left-0 z-40 flex flex-col border-r border-white/15 text-white shadow-[18px_0_55px_rgba(5,18,25,.22)] transition-all duration-300 ${collapsed ? 'w-[82px]' : 'w-64'} ${open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+    <aside className={`glass-sidebar fixed bottom-3 left-3 top-3 z-40 flex flex-col overflow-visible rounded-[26px] border border-white/20 text-white shadow-[18px_0_55px_rgba(5,18,25,.22)] transition-[width,transform] duration-300 ${collapsed ? 'w-[70px]' : 'w-64'} ${open ? 'translate-x-0' : '-translate-x-[calc(100%+1rem)] lg:translate-x-0'}`}>
       {/* Brand Header */}
-      <div className={`flex h-[68px] items-center border-b border-hotel-line ${collapsed ? 'justify-center px-3' : 'gap-3 px-5'}`}>
+      <div className={`flex h-[68px] shrink-0 items-center border-b border-white/10 ${collapsed ? 'justify-center px-3' : 'gap-3 px-5'}`}>
         <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-hotel-accent to-hotel-gold shadow-[0_0_15px_rgba(239,143,49,0.3)]">
           <Building2 className="h-5 w-5 text-[#14110f]" />
         </div>
@@ -107,13 +107,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, collapsed, onClose, onTo
       </div>}
 
       {/* Nav Navigation */}
-      <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-5">
+      <nav className={`sidebar-nav flex-1 overflow-y-auto px-2.5 py-4 ${collapsed ? 'space-y-3' : 'space-y-5'}`}>
         {NAV_GROUPS.map((group) => (
           <div key={group.title} className="space-y-1">
             {!collapsed && <span className="px-3 text-[9px] font-bold uppercase tracking-[.18em] text-white/45">
               {group.title}
             </span>}
-            <div className="mt-1 space-y-0.5">
+            <div className={`${collapsed ? 'space-y-1.5' : 'mt-1 space-y-0.5'}`}>
               {group.items.map((item) => (
                 <NavLink
                   key={item.path}
@@ -123,8 +123,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, collapsed, onClose, onTo
                   onClick={onClose}
                   className={({ isActive }) =>
                     clsx(
-                      'group flex items-center rounded-lg py-2.5 text-xs font-medium transition-all duration-200',
-                      collapsed ? 'justify-center px-2' : 'gap-3 px-3',
+                      'group relative flex items-center rounded-xl text-xs font-medium transition-all duration-200',
+                      collapsed ? 'h-11 justify-center px-2' : 'gap-3 px-3 py-2.5',
                       isActive
                         ? 'bg-white/88 text-[#123b3a] font-semibold shadow-[0_10px_24px_rgba(0,0,0,.16),inset_0_1px_0_rgba(255,255,255,.8)]'
                         : 'text-white/72 hover:bg-white/[0.11] hover:text-white'
@@ -140,6 +140,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, collapsed, onClose, onTo
                         )}
                       />
                       {!collapsed && <span>{item.name}</span>}
+                      {collapsed && <span className="sidebar-tooltip pointer-events-none absolute left-[calc(100%+14px)] z-50 whitespace-nowrap rounded-lg border border-white/20 bg-[#102b2c]/95 px-3 py-2 text-[11px] font-semibold text-white opacity-0 shadow-xl backdrop-blur-xl transition-all group-hover:translate-x-0 group-hover:opacity-100">{item.name}</span>}
                     </>
                   )}
                 </NavLink>
@@ -150,8 +151,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, collapsed, onClose, onTo
       </nav>
 
       {/* User Profile & Logout */}
-      <div className="border-t border-hotel-line p-3">
-        <div className={`flex items-center rounded-xl bg-white/[0.045] p-2.5 border border-hotel-line ${collapsed ? 'justify-center' : 'justify-between'}`}>
+      <div className="shrink-0 border-t border-white/10 p-2.5">
+        <div className={`flex items-center rounded-2xl border border-white/15 bg-white/[0.08] p-2.5 ${collapsed ? 'justify-center' : 'justify-between'}`}>
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-hotel-gold to-hotel-accent font-bold text-xs text-[#14110f]">
               {user?.first_name?.[0] || 'A'}
@@ -175,7 +176,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, collapsed, onClose, onTo
           </button>}
         </div>
       </div>
-      <button onClick={onToggleCollapse} className="absolute -right-3 top-20 hidden h-7 w-7 items-center justify-center rounded-full border border-[#d7ddd7] bg-white text-[#174b40] shadow-md lg:flex" aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
+      <button onClick={onToggleCollapse} className="absolute -right-3 top-16 hidden h-7 w-7 items-center justify-center rounded-full border border-white/60 bg-white/90 text-[#174b40] shadow-[0_7px_20px_rgba(5,30,32,.2)] backdrop-blur-lg transition hover:scale-105 lg:flex" aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
         <ChevronLeft className={`h-4 w-4 transition-transform ${collapsed ? 'rotate-180' : ''}`} />
       </button>
     </aside>

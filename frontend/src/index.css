@@ -318,10 +318,10 @@ textarea {
 }
 
 .glass-sidebar {
-  background: linear-gradient(180deg, rgba(5, 51, 44, 0.94), rgba(5, 38, 37, 0.91));
-  backdrop-filter: blur(24px) saturate(125%);
-  -webkit-backdrop-filter: blur(24px) saturate(125%);
-  box-shadow: 18px 0 60px rgba(2, 17, 22, 0.25), inset -1px 0 0 rgba(255, 255, 255, 0.1);
+  background: linear-gradient(155deg, rgba(18, 56, 51, 0.86), rgba(10, 34, 36, 0.76));
+  backdrop-filter: blur(28px) saturate(135%);
+  -webkit-backdrop-filter: blur(28px) saturate(135%);
+  box-shadow: 18px 16px 60px rgba(2, 17, 22, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.16), inset -1px 0 0 rgba(255, 255, 255, 0.08);
 }
 
 .glass-sidebar nav a,
@@ -331,6 +331,34 @@ textarea {
 }
 
 .glass-sidebar nav a:hover { transform: translateX(2px); }
+
+.glass-sidebar .sidebar-nav {
+  scrollbar-width: none;
+}
+
+.glass-sidebar .sidebar-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.glass-sidebar .sidebar-tooltip {
+  transform: translateX(-5px);
+}
+
+.glass-sidebar nav a::before {
+  content: '';
+  position: absolute;
+  left: -0.45rem;
+  width: 3px;
+  height: 0;
+  border-radius: 999px;
+  background: #e9bc5d;
+  box-shadow: 0 0 14px rgba(233, 188, 93, 0.68);
+  transition: height 180ms ease;
+}
+
+.glass-sidebar nav a[aria-current="page"]::before {
+  height: 55%;
+}
 
 .glass-topbar {
   background: linear-gradient(100deg, rgba(250, 252, 251, 0.89), rgba(235, 242, 243, 0.8));
@@ -400,7 +428,15 @@ textarea {
 
 @media (max-width: 1023px) {
   .premium-glass-shell { background-attachment: scroll; }
-  .glass-sidebar { box-shadow: 22px 0 70px rgba(2, 17, 22, 0.34); }
+  .glass-sidebar {
+    bottom: 0;
+    left: 0;
+    top: 0;
+    width: min(18rem, calc(100vw - 2rem));
+    border-radius: 0 26px 26px 0;
+    box-shadow: 22px 0 70px rgba(2, 17, 22, 0.34);
+  }
+  .glass-sidebar .sidebar-tooltip { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
