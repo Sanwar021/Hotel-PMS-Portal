@@ -220,3 +220,81 @@ textarea {
   25% { transform: rotate(-12deg); }
   75% { transform: rotate(12deg); }
 }
+
+/* Dashboard-only glass control centre. */
+.dashboard-glass {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: calc(100vh - 124px);
+  margin: -0.75rem;
+  padding: clamp(1rem, 2.3vw, 2rem);
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  border-radius: 1.75rem;
+  background:
+    linear-gradient(135deg, rgba(10, 25, 35, 0.32), rgba(20, 38, 48, 0.15)),
+    url('./assets/hotel-login-bg.png') center / cover fixed;
+  box-shadow: 0 24px 70px rgba(12, 30, 38, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.58);
+}
+
+.dashboard-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(circle at 14% 4%, rgba(213, 237, 250, 0.34), transparent 31%), linear-gradient(180deg, rgba(239, 246, 249, 0.24), rgba(13, 29, 38, 0.18));
+}
+
+.dashboard-glass > * {
+  position: relative;
+  animation: dashboard-rise 520ms cubic-bezier(.2, .8, .2, 1) both;
+}
+
+.dashboard-glass > :nth-child(2) { animation-delay: 45ms; }
+.dashboard-glass > :nth-child(3) { animation-delay: 90ms; }
+.dashboard-glass > :nth-child(4) { animation-delay: 135ms; }
+.dashboard-glass > :nth-child(5) { animation-delay: 180ms; }
+.dashboard-glass > :nth-child(6) { animation-delay: 225ms; }
+
+.dashboard-glass > :first-child,
+.dashboard-glass [class~="bg-hotel-panel"] {
+  border-color: rgba(255, 255, 255, 0.55) !important;
+  background: linear-gradient(145deg, rgba(248, 251, 252, 0.82), rgba(226, 235, 239, 0.68)) !important;
+  box-shadow: 0 14px 35px rgba(5, 23, 32, 0.13), inset 0 1px 0 rgba(255, 255, 255, 0.86), inset 0 -1px 0 rgba(255, 255, 255, 0.24) !important;
+  backdrop-filter: blur(18px) saturate(135%);
+  -webkit-backdrop-filter: blur(18px) saturate(135%);
+}
+
+.dashboard-glass > :first-child {
+  padding: 1.15rem 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 1.25rem;
+}
+
+.dashboard-glass [class~="bg-hotel-panel"] {
+  transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+}
+
+.dashboard-glass [class~="bg-hotel-panel"]:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.82) !important;
+  box-shadow: 0 20px 45px rgba(5, 23, 32, 0.17), inset 0 1px 0 rgba(255, 255, 255, 0.94) !important;
+}
+
+.dashboard-glass table tbody tr { transition: background-color 160ms ease; }
+.dashboard-glass table tbody tr:hover { background: rgba(255, 255, 255, 0.38) !important; }
+
+@keyframes dashboard-rise {
+  from { opacity: 0; transform: translateY(10px) scale(.995); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (max-width: 1023px) {
+  .dashboard-glass { margin: -0.25rem; border-radius: 1.25rem; background-attachment: scroll; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-glass > * { animation: none !important; }
+  .dashboard-glass [class~="bg-hotel-panel"]:hover { transform: none; }
+}

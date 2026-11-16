@@ -57,7 +57,7 @@ export const DashboardPage: React.FC = () => {
   const COLORS = ['#a9752e', '#b7893e', '#3f846c', '#568294', '#826a96', '#b95f55'];
 
   return (
-    <div className="space-y-8">
+    <div className="dashboard-glass space-y-6">
       {/* Page Header */}
       <PageHeader
         kicker="Executive Hotel Control Center"
