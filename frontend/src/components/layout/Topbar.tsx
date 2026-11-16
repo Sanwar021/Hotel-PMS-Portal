@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Bell,
-  Search,
   WifiOff,
   Plus,
   CheckCircle2,
@@ -32,12 +31,13 @@ export const Topbar: React.FC<TopbarProps> = ({
   onQuickCheckIn,
   onQuickOrder,
 }) => {
-  const { isConnected, lastMessage } = useSocket();
+  const { lastMessage } = useSocket();
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [showNotifs, setShowNotifs] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(false);
-  const [currentTime, setCurrentTime] = useState<string>('');
+  const [regionalTimes, setRegionalTimes] = useState({ bangladesh: '', usa: '' });
+  const [networkOnline, setNetworkOnline] = useState(() => navigator.onLine);
   const [latestSignal, setLatestSignal] = useState<NotificationItem | null>(null);
   const [signalActive, setSignalActive] = useState(false);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -113,19 +113,29 @@ export const Topbar: React.FC<TopbarProps> = ({
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
-      setCurrentTime(
-        now.toLocaleDateString('en-US', {
-          weekday: 'short',
-          month: 'short',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-        })
-      );
+      const formatTime = (timeZone: string) => now.toLocaleTimeString('en-US', {
+        timeZone,
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+      setRegionalTimes({
+        bangladesh: formatTime('Asia/Dhaka'),
+        usa: formatTime('America/New_York'),
+      });
     };
     updateTime();
     const interval = setInterval(updateTime, 1000);
     return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const updateNetworkStatus = () => setNetworkOnline(navigator.onLine);
+    window.addEventListener('online', updateNetworkStatus);
+    window.addEventListener('offline', updateNetworkStatus);
+    return () => {
+      window.removeEventListener('online', updateNetworkStatus);
+      window.removeEventListener('offline', updateNetworkStatus);
+    };
   }, []);
 
   useEffect(() => {
@@ -175,43 +185,52 @@ export const Topbar: React.FC<TopbarProps> = ({
 
   return (
     <header className="glass-topbar sticky top-0 z-20 flex h-[68px] w-full items-center justify-between border-b border-white/45 px-3 shadow-[0_10px_35px_rgba(8,28,37,.1)] sm:px-5">
-      {/* Search Input */}
+      {/* Regional clocks */}
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <button onClick={onOpenMenu} className="rounded-lg border border-hotel-line bg-white p-2 text-[#174b40] lg:hidden" aria-label="Open menu"><Menu className="h-5 w-5" /></button>
-        <div className="relative w-full max-w-sm">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-hotel-muted" />
-        <input
-          type="text"
-          placeholder="Global search rooms, guests, folios..."
-          className="w-full rounded-lg border border-hotel-line bg-[#f8faf7] py-2 pl-9 pr-4 text-xs text-hotel-text placeholder:text-hotel-muted/70 focus:border-[#b9974b] focus:outline-none focus:ring-2 focus-[#b9974b]/15 transition-all"
-        />
+        <div className="flex items-center overflow-hidden rounded-2xl border border-white/70 bg-white/45 p-1 shadow-[0_8px_28px_rgba(18,62,51,.09),inset_0_1px_0_rgba(255,255,255,.8)] backdrop-blur-xl">
+          <div className="flex items-center gap-2 rounded-xl px-2.5 py-1.5 sm:px-3">
+            <span aria-label="Bangladesh" role="img" className="relative h-4 w-6 shrink-0 overflow-hidden rounded-[3px] bg-[#006a4e] shadow-sm ring-1 ring-black/10">
+              <span className="absolute left-[42%] top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#f42a41]" />
+            </span>
+            <span className="leading-none">
+              <span className="block text-[8px] font-bold uppercase tracking-[.16em] text-[#7b8c87]">BD</span>
+              <span className="mt-0.5 block whitespace-nowrap text-[11px] font-semibold tabular-nums text-[#193f36]">{regionalTimes.bangladesh}</span>
+            </span>
+          </div>
+          <span className="h-7 w-px bg-[#b9c8c2]/65" />
+          <div className="flex items-center gap-2 rounded-xl px-2.5 py-1.5 sm:px-3">
+            <span aria-label="United States" role="img" className="relative h-4 w-6 shrink-0 overflow-hidden rounded-[3px] bg-[repeating-linear-gradient(to_bottom,#b22234_0,#b22234_1.23px,#fff_1.23px,#fff_2.46px)] shadow-sm ring-1 ring-black/10">
+              <span className="absolute left-0 top-0 h-[8.6px] w-[10px] bg-[#3c3b6e]" />
+            </span>
+            <span className="leading-none">
+              <span className="block text-[8px] font-bold uppercase tracking-[.16em] text-[#7b8c87]">USA · ET</span>
+              <span className="mt-0.5 block whitespace-nowrap text-[11px] font-semibold tabular-nums text-[#193f36]">{regionalTimes.usa}</span>
+            </span>
+          </div>
         </div>
       </div>
 
       {/* Right Controls */}
       <div className="ml-3 flex items-center gap-2 sm:gap-3.5">
-        {/* Date Time */}
-        <div className="hidden text-xs font-medium text-hotel-muted xl:block">
-          {currentTime}
-        </div>
-
-        {/* Real-time Status */}
+        {/* Internet status */}
         <div
-          title={isConnected ? 'Live WebSocket Connected' : 'Reconnecting WebSocket'}
-          className="hidden items-center gap-1.5 rounded-full border border-hotel-line bg-white px-2.5 py-1 text-[11px] text-hotel-muted sm:flex"
+          role="status"
+          title={networkOnline ? 'Internet connected' : 'Internet disconnected'}
+          className={`hidden items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-semibold shadow-[0_6px_20px_rgba(18,62,51,.08)] backdrop-blur-xl sm:flex ${networkOnline ? 'border-emerald-200/80 bg-emerald-50/75 text-emerald-700' : 'border-rose-200/80 bg-rose-50/80 text-rose-700'}`}
         >
-          {isConnected ? (
+          {networkOnline ? (
             <>
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-55" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
               </span>
-              <span className="text-emerald-400 font-medium">Live</span>
+              <span>Connected</span>
             </>
           ) : (
             <>
-              <WifiOff className="h-3 w-3 text-amber-500" />
-              <span className="text-amber-400 font-medium">Connecting</span>
+              <WifiOff className="h-3.5 w-3.5" />
+              <span>Disconnected</span>
             </>
           )}
         </div>
