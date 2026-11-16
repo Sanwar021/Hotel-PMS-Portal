@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Bell,
-  WifiOff,
   Plus,
   CheckCircle2,
   AlertTriangle,
@@ -38,7 +37,6 @@ export const Topbar: React.FC<TopbarProps> = ({
   const [showQuickActions, setShowQuickActions] = useState(false);
   const [regionalTimes, setRegionalTimes] = useState({ bangladesh: '', usa: '' });
   const [selectedRegion, setSelectedRegion] = useState<'usa' | 'bangladesh'>('usa');
-  const [networkOnline, setNetworkOnline] = useState(() => navigator.onLine);
   const [latestSignal, setLatestSignal] = useState<NotificationItem | null>(null);
   const [signalActive, setSignalActive] = useState(false);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -130,16 +128,6 @@ export const Topbar: React.FC<TopbarProps> = ({
   }, []);
 
   useEffect(() => {
-    const updateNetworkStatus = () => setNetworkOnline(navigator.onLine);
-    window.addEventListener('online', updateNetworkStatus);
-    window.addEventListener('offline', updateNetworkStatus);
-    return () => {
-      window.removeEventListener('online', updateNetworkStatus);
-      window.removeEventListener('offline', updateNetworkStatus);
-    };
-  }, []);
-
-  useEffect(() => {
     settingsApi.getNotifications().then(setNotifications).catch(() => {});
   }, []);
 
@@ -224,30 +212,6 @@ export const Topbar: React.FC<TopbarProps> = ({
 
       {/* Right Controls */}
       <div className="ml-3 flex items-center gap-2 sm:gap-3.5">
-        {/* Internet status */}
-        <div
-          role="status"
-          title={networkOnline ? 'Internet connected' : 'Internet disconnected'}
-          className={`hidden h-9 items-center gap-2 rounded-full border py-1 pl-1 pr-3 text-[10px] font-bold uppercase tracking-[.08em] shadow-[0_8px_24px_rgba(18,62,51,.09),inset_0_1px_0_rgba(255,255,255,.9)] backdrop-blur-xl sm:flex ${networkOnline ? 'border-emerald-200/80 bg-emerald-50/75 text-emerald-700' : 'border-rose-200/80 bg-rose-50/80 text-rose-700'}`}
-        >
-          {networkOnline ? (
-            <>
-              <span className="relative flex h-6 w-10 items-center rounded-full bg-emerald-600/15 p-0.5 ring-1 ring-emerald-500/20">
-                <span className="ml-auto h-5 w-5 rounded-full bg-emerald-500 shadow-[0_2px_8px_rgba(16,185,129,.42)]" />
-              </span>
-              <span>Online</span>
-            </>
-          ) : (
-            <>
-              <span className="relative flex h-6 w-10 items-center rounded-full bg-rose-600/15 p-0.5 ring-1 ring-rose-500/20">
-                <span className="h-5 w-5 rounded-full bg-rose-500 shadow-[0_2px_8px_rgba(244,63,94,.35)]" />
-              </span>
-              <WifiOff className="h-3.5 w-3.5" />
-              <span>Offline</span>
-            </>
-          )}
-        </div>
-
         {/* Quick Actions Dropdown */}
         <div className="relative">
           <button
