@@ -1,28 +1,34 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { SocketProvider } from './contexts/SocketContext';
-import { AppLayout } from './components/layout/AppLayout';
 import { AppErrorBoundary } from './components/common/AppErrorBoundary';
 
-import { LoginPage } from './pages/login/LoginPage';
-import { DashboardPage } from './pages/dashboard/DashboardPage';
-import { FrontDeskPage } from './pages/frontdesk/FrontDeskPage';
-import { CalendarPage } from './pages/calendar/CalendarPage';
-import { ReservationsPage } from './pages/reservations/ReservationsPage';
-import { RoomsPage } from './pages/rooms/RoomsPage';
-import { HousekeepingPage } from './pages/housekeeping/HousekeepingPage';
-import { GuestsPage } from './pages/guests/GuestsPage';
-import { RestaurantPage } from './pages/restaurant/RestaurantPage';
-import { FinancePage } from './pages/finance/FinancePage';
-import { InventoryPage } from './pages/inventory/InventoryPage';
-import { ProcurementPage } from './pages/procurement/ProcurementPage';
-import { MaintenancePage } from './pages/maintenance/MaintenancePage';
-import { EmployeesPage } from './pages/employees/EmployeesPage';
-import { RevenuePage } from './pages/revenue/RevenuePage';
-import { ReportsPage } from './pages/reports/ReportsPage';
-import { SettingsPage } from './pages/settings/SettingsPage';
+const LoginPage = lazy(() => import('./pages/login/LoginPage').then((module) => ({ default: module.LoginPage })));
+const AppLayout = lazy(() => import('./components/layout/AppLayout').then((module) => ({ default: module.AppLayout })));
+const DashboardPage = lazy(() => import('./pages/dashboard/DashboardPage').then((module) => ({ default: module.DashboardPage })));
+const FrontDeskPage = lazy(() => import('./pages/frontdesk/FrontDeskPage').then((module) => ({ default: module.FrontDeskPage })));
+const CalendarPage = lazy(() => import('./pages/calendar/CalendarPage').then((module) => ({ default: module.CalendarPage })));
+const ReservationsPage = lazy(() => import('./pages/reservations/ReservationsPage').then((module) => ({ default: module.ReservationsPage })));
+const RoomsPage = lazy(() => import('./pages/rooms/RoomsPage').then((module) => ({ default: module.RoomsPage })));
+const HousekeepingPage = lazy(() => import('./pages/housekeeping/HousekeepingPage').then((module) => ({ default: module.HousekeepingPage })));
+const GuestsPage = lazy(() => import('./pages/guests/GuestsPage').then((module) => ({ default: module.GuestsPage })));
+const RestaurantPage = lazy(() => import('./pages/restaurant/RestaurantPage').then((module) => ({ default: module.RestaurantPage })));
+const FinancePage = lazy(() => import('./pages/finance/FinancePage').then((module) => ({ default: module.FinancePage })));
+const InventoryPage = lazy(() => import('./pages/inventory/InventoryPage').then((module) => ({ default: module.InventoryPage })));
+const ProcurementPage = lazy(() => import('./pages/procurement/ProcurementPage').then((module) => ({ default: module.ProcurementPage })));
+const MaintenancePage = lazy(() => import('./pages/maintenance/MaintenancePage').then((module) => ({ default: module.MaintenancePage })));
+const EmployeesPage = lazy(() => import('./pages/employees/EmployeesPage').then((module) => ({ default: module.EmployeesPage })));
+const RevenuePage = lazy(() => import('./pages/revenue/RevenuePage').then((module) => ({ default: module.RevenuePage })));
+const ReportsPage = lazy(() => import('./pages/reports/ReportsPage').then((module) => ({ default: module.ReportsPage })));
+const SettingsPage = lazy(() => import('./pages/settings/SettingsPage').then((module) => ({ default: module.SettingsPage })));
+
+const PageLoader = () => (
+  <div className="flex min-h-[45vh] items-center justify-center" role="status" aria-label="Loading page">
+    <div className="h-8 w-8 animate-spin rounded-full border-2 border-hotel-accent border-t-transparent" />
+  </div>
+);
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -57,6 +63,7 @@ export default function App() {
       <AuthProvider>
         <SocketProvider>
           <BrowserRouter>
+            <Suspense fallback={<PageLoader />}>
             <Routes>
               {/* Public Authentication Route */}
               <Route path="/login" element={<LoginPage />} />
@@ -90,6 +97,7 @@ export default function App() {
               {/* Fallback */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
+            </Suspense>
           </BrowserRouter>
         </SocketProvider>
       </AuthProvider>

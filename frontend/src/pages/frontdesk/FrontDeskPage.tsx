@@ -17,7 +17,6 @@ import {
   Loader2,
   ShieldCheck,
 } from 'lucide-react';
-import { createWorker } from 'tesseract.js';
 import { frontdeskApi, roomsApi, billingApi, identityApi, reservationsApi, ParsedNIDIdentity } from '../../api/endpoints';
 import { PageHeader } from '../../components/common/PageHeader';
 import { StatusBadge } from '../../components/common/StatusBadge';
@@ -135,8 +134,9 @@ export const FrontDeskPage: React.FC = () => {
     setIsScanning(true);
     setScanWarnings([]);
     setScanProgress('Preparing secure on-device OCR...');
-    let worker: Awaited<ReturnType<typeof createWorker>> | null = null;
+    let worker: { recognize: (image: File) => Promise<{ data: { text: string } }>; terminate: () => Promise<unknown> } | null = null;
     try {
+      const { createWorker } = await import('tesseract.js');
       worker = await createWorker('eng', 1, {
         logger: (message) => {
           if (message.status) setScanProgress(`${message.status}${message.progress ? ` ${Math.round(message.progress * 100)}%` : ''}`);

@@ -52,6 +52,14 @@ func main() {
 	// 5. Setup Gin Router
 	router := gin.Default()
 	router.Use(middleware.CORSMiddleware(cfg.CORSOrigin))
+	router.Use(func(c *gin.Context) {
+		if strings.HasPrefix(c.Request.URL.Path, "/assets/") {
+			// Vite fingerprints production assets, so they are safe to cache for a
+			// year. This makes repeat visits and page chunks effectively instant.
+			c.Header("Cache-Control", "public, max-age=31536000, immutable")
+		}
+		c.Next()
+	})
 
 	// Health Check
 	router.GET("/health", func(c *gin.Context) {
