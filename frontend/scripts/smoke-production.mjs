@@ -45,7 +45,8 @@ const desktopSidebarBox = await page.locator('aside').boundingBox();
 if (!desktopSidebarBox || desktopSidebarBox.x < 0 || desktopSidebarBox.y < 0 || desktopSidebarBox.y + desktopSidebarBox.height > 901) {
   throw new Error('Sidebar is misaligned at 1280x900.');
 }
-await page.getByLabel('Expand sidebar').click();
+const expandSidebar = page.getByLabel('Expand sidebar');
+if (await expandSidebar.count()) await expandSidebar.click();
 await page.getByLabel('Log out').click();
 await page.waitForURL('**/login');
 await page.getByLabel('Four digit access PIN').waitFor();
