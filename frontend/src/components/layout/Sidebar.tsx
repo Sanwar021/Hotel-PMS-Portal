@@ -76,17 +76,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, collapsed, onClose, onTo
   const { user, logout } = useAuth();
 
   return (
-    <aside className={`glass-sidebar fixed bottom-3 left-3 top-3 z-40 flex flex-col overflow-visible rounded-[26px] border border-white/20 text-white shadow-[18px_0_55px_rgba(5,18,25,.22)] transition-[width,transform] duration-300 ${collapsed ? 'w-[70px]' : 'w-64'} ${open ? 'translate-x-0' : '-translate-x-[calc(100%+1rem)] lg:translate-x-0'}`}>
+    <aside className={`glass-sidebar fixed bottom-2.5 left-2.5 top-2.5 z-40 flex flex-col overflow-visible rounded-[28px] border border-white/30 text-white transition-[width,transform] duration-300 ease-out ${collapsed ? 'w-[76px]' : 'w-[268px]'} ${open ? 'translate-x-0' : '-translate-x-[calc(100%+1rem)] lg:translate-x-0'}`}>
       {/* Brand Header */}
-      <div className={`flex h-[68px] shrink-0 items-center border-b border-white/10 ${collapsed ? 'justify-center px-3' : 'gap-3 px-5'}`}>
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-hotel-accent to-hotel-gold shadow-[0_0_15px_rgba(239,143,49,0.3)]">
+      <div className={`relative z-10 flex h-[74px] shrink-0 items-center border-b border-white/[0.12] ${collapsed ? 'justify-center px-3' : 'gap-3 px-4'}`}>
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-gradient-to-br from-[#d7a13a] to-[#b97818] shadow-[0_8px_22px_rgba(5,20,20,.25),inset_0_1px_0_rgba(255,255,255,.32)]">
           <Building2 className="h-5 w-5 text-[#14110f]" />
         </div>
         {!collapsed && <div className="flex flex-col">
-          <span className="font-serif text-lg font-bold tracking-tight text-white">
+          <span className="font-serif text-[19px] font-bold leading-5 tracking-tight text-[#fffdf7]">
             Hotel<span className="text-hotel-accent">OS</span>
           </span>
-          <span className="text-[10px] uppercase tracking-widest text-white/55 font-medium">
+          <span className="mt-1 text-[9px] font-semibold uppercase tracking-[.17em] text-white/55">
             Property PMS
           </span>
         </div>}
@@ -94,12 +94,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, collapsed, onClose, onTo
       </div>
 
       {/* Active Property Selector */}
-      {!collapsed && <div className="mx-3 mt-4 flex items-center justify-between rounded-xl border border-hotel-line bg-white/[0.055] px-3 py-3 text-xs">
+      {!collapsed && <div className="relative z-10 mx-3 mt-3.5 flex min-h-[56px] items-center justify-between rounded-2xl border border-white/25 bg-white/[0.075] px-3.5 py-2.5 text-xs shadow-[inset_0_1px_0_rgba(255,255,255,.1),0_8px_22px_rgba(3,19,21,.1)]">
         <div className="flex flex-col min-w-0">
-          <span className="text-[10px] uppercase font-bold tracking-wider text-hotel-gold">
+          <span className="text-[9px] font-bold uppercase tracking-[.14em] text-[#e5b957]">
             Current Property
           </span>
-          <span className="truncate font-medium text-white">
+          <span className="mt-0.5 truncate text-[12px] font-semibold text-white">
             Grand Residence Dhaka
           </span>
         </div>
@@ -107,13 +107,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, collapsed, onClose, onTo
       </div>}
 
       {/* Nav Navigation */}
-      <nav className={`sidebar-nav flex-1 overflow-y-auto px-2.5 py-4 ${collapsed ? 'space-y-3' : 'space-y-5'}`}>
+      <nav className={`sidebar-nav relative z-10 flex-1 overflow-y-auto px-3 py-3.5 ${collapsed ? 'space-y-2.5' : 'space-y-4'}`}>
         {NAV_GROUPS.map((group) => (
           <div key={group.title} className="space-y-1">
-            {!collapsed && <span className="px-3 text-[9px] font-bold uppercase tracking-[.18em] text-white/45">
+            {!collapsed && <span className="sidebar-group-title block px-3 text-[9px] font-bold uppercase tracking-[.17em] text-white/46">
               {group.title}
             </span>}
-            <div className={`${collapsed ? 'space-y-1.5' : 'mt-1 space-y-0.5'}`}>
+            <div className={`${collapsed ? 'space-y-1' : 'mt-1.5 space-y-0.5'}`}>
               {group.items.map((item) => (
                 <NavLink
                   key={item.path}
@@ -123,22 +123,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, collapsed, onClose, onTo
                   onClick={onClose}
                   className={({ isActive }) =>
                     clsx(
-                      'group relative flex items-center rounded-xl text-xs font-medium transition-all duration-200',
-                      collapsed ? 'h-11 justify-center px-2' : 'gap-3 px-3 py-2.5',
+                      'group relative flex items-center rounded-xl border border-transparent text-xs font-medium transition-all duration-200',
+                      collapsed ? 'h-10 justify-center px-2' : 'h-9 gap-2.5 px-2.5',
                       isActive
-                        ? 'bg-white/88 text-[#123b3a] font-semibold shadow-[0_10px_24px_rgba(0,0,0,.16),inset_0_1px_0_rgba(255,255,255,.8)]'
+                        ? 'border-white/70 bg-[#f4f7f4]/95 text-[#123b35] font-semibold shadow-[0_9px_22px_rgba(0,0,0,.17),inset_0_1px_0_rgba(255,255,255,.9)]'
                         : 'text-white/72 hover:bg-white/[0.11] hover:text-white'
                     )
                   }
                 >
                   {({ isActive }) => (
                     <>
-                      <item.icon
-                        className={clsx(
-                          'h-4 w-4 transition-colors',
+                      <span className={clsx('flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors', isActive ? 'bg-[#dfe9e4] shadow-[inset_0_1px_0_rgba(255,255,255,.8)]' : 'bg-transparent group-hover:bg-white/[0.08]')}>
+                        <item.icon className={clsx(
+                          'h-[15px] w-[15px] transition-colors',
                           isActive ? 'text-[#124c40]' : 'text-white/55 group-hover:text-white'
-                        )}
-                      />
+                        )} />
+                      </span>
                       {!collapsed && <span>{item.name}</span>}
                       {collapsed && <span className="sidebar-tooltip pointer-events-none absolute left-[calc(100%+14px)] z-50 whitespace-nowrap rounded-lg border border-white/20 bg-[#102b2c]/95 px-3 py-2 text-[11px] font-semibold text-white opacity-0 shadow-xl backdrop-blur-xl transition-all group-hover:translate-x-0 group-hover:opacity-100">{item.name}</span>}
                     </>
@@ -151,10 +151,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, collapsed, onClose, onTo
       </nav>
 
       {/* User Profile & Logout */}
-      <div className="shrink-0 border-t border-white/10 p-2.5">
-        <div className={`flex items-center rounded-2xl border border-white/15 bg-white/[0.08] p-2.5 ${collapsed ? 'justify-center' : 'justify-between'}`}>
+      <div className="relative z-10 shrink-0 border-t border-white/[0.12] p-2.5">
+        <div className={`flex min-h-[58px] items-center rounded-2xl border border-white/20 bg-white/[0.085] p-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,.1)] ${collapsed ? 'justify-center' : 'justify-between'}`}>
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-hotel-gold to-hotel-accent font-bold text-xs text-[#14110f]">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/15 bg-gradient-to-br from-[#dfae4d] to-[#b9791d] font-bold text-xs text-[#17130e] shadow-[0_6px_16px_rgba(0,0,0,.18)]">
               {user?.first_name?.[0] || 'A'}
             </div>
             {!collapsed && <div className="flex flex-col min-w-0">
@@ -170,13 +170,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, collapsed, onClose, onTo
             onClick={logout}
             title="Log out"
             aria-label="Log out"
-            className="flex h-10 w-10 items-center justify-center rounded-md text-white/55 hover:bg-white/10 hover:text-rose-300 transition-colors"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-transparent text-white/50 transition-colors hover:border-rose-300/15 hover:bg-rose-400/10 hover:text-rose-200"
           >
             <LogOut className="h-4 w-4" />
           </button>}
         </div>
       </div>
-      <button onClick={onToggleCollapse} className="absolute -right-3 top-16 hidden h-7 w-7 items-center justify-center rounded-full border border-white/60 bg-white/90 text-[#174b40] shadow-[0_7px_20px_rgba(5,30,32,.2)] backdrop-blur-lg transition hover:scale-105 lg:flex" aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
+      <button onClick={onToggleCollapse} className="absolute -right-3.5 top-[72px] hidden h-8 w-8 items-center justify-center rounded-full border border-white/80 bg-[#f7faf8]/95 text-[#174b40] shadow-[0_8px_24px_rgba(5,30,32,.24),inset_0_1px_0_white] backdrop-blur-xl transition duration-200 hover:scale-105 hover:bg-white lg:flex" aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
         <ChevronLeft className={`h-4 w-4 transition-transform ${collapsed ? 'rotate-180' : ''}`} />
       </button>
     </aside>

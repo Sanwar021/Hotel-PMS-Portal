@@ -27,6 +27,24 @@ await page.getByRole('button', { name: 'BD', exact: true }).click();
 await page.getByText('Bangladesh', { exact: true }).waitFor();
 await page.getByRole('button', { name: 'USA', exact: true }).click();
 await page.getByText('USA / ET', { exact: true }).waitFor();
+
+for (const viewport of [{ width: 390, height: 844 }, { width: 768, height: 1024 }]) {
+  await page.setViewportSize(viewport);
+  await page.getByLabel('Open menu').click();
+  await page.waitForTimeout(350);
+  const sidebarBox = await page.locator('aside').boundingBox();
+  if (!sidebarBox || sidebarBox.x < 0 || sidebarBox.y < 0 || sidebarBox.x + sidebarBox.width > viewport.width + 1 || sidebarBox.y + sidebarBox.height > viewport.height + 1) {
+    throw new Error(`Sidebar is misaligned at ${viewport.width}x${viewport.height}.`);
+  }
+  await page.getByLabel('Close menu').click();
+}
+
+await page.setViewportSize({ width: 1280, height: 900 });
+await page.waitForTimeout(350);
+const desktopSidebarBox = await page.locator('aside').boundingBox();
+if (!desktopSidebarBox || desktopSidebarBox.x < 0 || desktopSidebarBox.y < 0 || desktopSidebarBox.y + desktopSidebarBox.height > 901) {
+  throw new Error('Sidebar is misaligned at 1280x900.');
+}
 await page.getByLabel('Expand sidebar').click();
 await page.getByLabel('Log out').click();
 await page.waitForURL('**/login');

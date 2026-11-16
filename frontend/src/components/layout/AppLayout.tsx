@@ -77,7 +77,7 @@ export const AppLayout: React.FC = () => {
         onToggleCollapse={() => setSidebarCollapsed((value) => !value)}
       />
       {sidebarOpen && <button aria-label="Close navigation" onClick={() => setSidebarOpen(false)} className="fixed inset-0 z-30 bg-[#06231d]/55 backdrop-blur-sm lg:hidden" />}
-      <div className={`min-h-screen transition-[padding] duration-300 ${sidebarCollapsed ? 'lg:pl-[102px]' : 'lg:pl-[276px]'}`}>
+      <div className={`min-h-screen transition-[padding] duration-300 ${sidebarCollapsed ? 'lg:pl-[102px]' : 'lg:pl-[294px]'}`}>
         <Topbar
           onOpenMenu={() => {
             setSidebarOpen(true);
