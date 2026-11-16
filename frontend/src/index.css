@@ -260,7 +260,7 @@ textarea {
 .dashboard-glass > :first-child,
 .dashboard-glass [class~="bg-hotel-panel"] {
   border-color: rgba(255, 255, 255, 0.55) !important;
-  background: linear-gradient(145deg, rgba(248, 251, 252, 0.82), rgba(226, 235, 239, 0.68)) !important;
+  background: linear-gradient(145deg, rgba(248, 251, 252, 0.89), rgba(226, 235, 239, 0.78)) !important;
   box-shadow: 0 14px 35px rgba(5, 23, 32, 0.13), inset 0 1px 0 rgba(255, 255, 255, 0.86), inset 0 -1px 0 rgba(255, 255, 255, 0.24) !important;
   backdrop-filter: blur(18px) saturate(135%);
   -webkit-backdrop-filter: blur(18px) saturate(135%);
