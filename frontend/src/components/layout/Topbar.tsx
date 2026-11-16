@@ -37,6 +37,7 @@ export const Topbar: React.FC<TopbarProps> = ({
   const [showNotifs, setShowNotifs] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(false);
   const [regionalTimes, setRegionalTimes] = useState({ bangladesh: '', usa: '' });
+  const [selectedRegion, setSelectedRegion] = useState<'usa' | 'bangladesh'>('usa');
   const [networkOnline, setNetworkOnline] = useState(() => navigator.onLine);
   const [latestSignal, setLatestSignal] = useState<NotificationItem | null>(null);
   const [signalActive, setSignalActive] = useState(false);
@@ -182,31 +183,41 @@ export const Topbar: React.FC<TopbarProps> = ({
   };
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
+  const selectedTime = selectedRegion === 'usa' ? regionalTimes.usa : regionalTimes.bangladesh;
 
   return (
     <header className="glass-topbar sticky top-0 z-20 flex h-[68px] w-full items-center justify-between border-b border-white/45 px-3 shadow-[0_10px_35px_rgba(8,28,37,.1)] sm:px-5">
       {/* Regional clocks */}
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <button onClick={onOpenMenu} className="rounded-lg border border-hotel-line bg-white p-2 text-[#174b40] lg:hidden" aria-label="Open menu"><Menu className="h-5 w-5" /></button>
-        <div className="flex items-center overflow-hidden rounded-2xl border border-white/70 bg-white/45 p-1 shadow-[0_8px_28px_rgba(18,62,51,.09),inset_0_1px_0_rgba(255,255,255,.8)] backdrop-blur-xl">
-          <div className="flex items-center gap-2 rounded-xl px-2.5 py-1.5 sm:px-3">
-            <span aria-label="Bangladesh" role="img" className="relative h-4 w-6 shrink-0 overflow-hidden rounded-[3px] bg-[#006a4e] shadow-sm ring-1 ring-black/10">
-              <span className="absolute left-[42%] top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#f42a41]" />
-            </span>
+        <div className="flex h-11 items-center gap-1.5 rounded-2xl border border-white/80 bg-[linear-gradient(135deg,rgba(255,255,255,.82),rgba(230,239,237,.65))] p-1.5 shadow-[0_10px_30px_rgba(13,54,47,.11),inset_0_1px_0_rgba(255,255,255,.95)] backdrop-blur-2xl">
+          <div className="flex min-w-[7rem] items-center gap-2 px-1.5 sm:min-w-[8.25rem]">
+            {selectedRegion === 'bangladesh' ? (
+              <span aria-label="Bangladesh" role="img" className="relative h-4 w-6 shrink-0 overflow-hidden rounded-[3px] bg-[#006a4e] shadow-sm ring-1 ring-black/10">
+                <span className="absolute left-[42%] top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#f42a41]" />
+              </span>
+            ) : (
+              <span aria-label="United States" role="img" className="relative h-4 w-6 shrink-0 overflow-hidden rounded-[3px] bg-[repeating-linear-gradient(to_bottom,#b22234_0,#b22234_1.23px,#fff_1.23px,#fff_2.46px)] shadow-sm ring-1 ring-black/10">
+                <span className="absolute left-0 top-0 h-[8.6px] w-[10px] bg-[#3c3b6e]" />
+              </span>
+            )}
             <span className="leading-none">
-              <span className="block text-[8px] font-bold uppercase tracking-[.16em] text-[#7b8c87]">BD</span>
-              <span className="mt-0.5 block whitespace-nowrap text-[11px] font-semibold tabular-nums text-[#193f36]">{regionalTimes.bangladesh}</span>
+              <span className="block text-[8px] font-bold uppercase tracking-[.15em] text-[#647b74]">{selectedRegion === 'usa' ? 'USA / ET' : 'Bangladesh'}</span>
+              <span className="mt-1 block whitespace-nowrap text-xs font-bold tabular-nums text-[#143c33]">{selectedTime}</span>
             </span>
           </div>
-          <span className="h-7 w-px bg-[#b9c8c2]/65" />
-          <div className="flex items-center gap-2 rounded-xl px-2.5 py-1.5 sm:px-3">
-            <span aria-label="United States" role="img" className="relative h-4 w-6 shrink-0 overflow-hidden rounded-[3px] bg-[repeating-linear-gradient(to_bottom,#b22234_0,#b22234_1.23px,#fff_1.23px,#fff_2.46px)] shadow-sm ring-1 ring-black/10">
-              <span className="absolute left-0 top-0 h-[8.6px] w-[10px] bg-[#3c3b6e]" />
-            </span>
-            <span className="leading-none">
-              <span className="block text-[8px] font-bold uppercase tracking-[.16em] text-[#7b8c87]">USA · ET</span>
-              <span className="mt-0.5 block whitespace-nowrap text-[11px] font-semibold tabular-nums text-[#193f36]">{regionalTimes.usa}</span>
-            </span>
+          <div className="flex rounded-xl border border-[#b7c9c3]/55 bg-[#dce7e3]/55 p-0.5" role="group" aria-label="Select time region">
+            {(['usa', 'bangladesh'] as const).map((region) => (
+              <button
+                key={region}
+                type="button"
+                onClick={() => setSelectedRegion(region)}
+                aria-pressed={selectedRegion === region}
+                className={`rounded-[9px] px-2 py-1.5 text-[9px] font-extrabold tracking-[.1em] transition-all duration-200 ${selectedRegion === region ? 'bg-[#0d4b3d] text-white shadow-[0_4px_12px_rgba(13,75,61,.2)]' : 'text-[#557069] hover:bg-white/70 hover:text-[#173f36]'}`}
+              >
+                {region === 'usa' ? 'USA' : 'BD'}
+              </button>
+            ))}
           </div>
         </div>
       </div>
@@ -217,20 +228,22 @@ export const Topbar: React.FC<TopbarProps> = ({
         <div
           role="status"
           title={networkOnline ? 'Internet connected' : 'Internet disconnected'}
-          className={`hidden items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-semibold shadow-[0_6px_20px_rgba(18,62,51,.08)] backdrop-blur-xl sm:flex ${networkOnline ? 'border-emerald-200/80 bg-emerald-50/75 text-emerald-700' : 'border-rose-200/80 bg-rose-50/80 text-rose-700'}`}
+          className={`hidden h-9 items-center gap-2 rounded-full border py-1 pl-1 pr-3 text-[10px] font-bold uppercase tracking-[.08em] shadow-[0_8px_24px_rgba(18,62,51,.09),inset_0_1px_0_rgba(255,255,255,.9)] backdrop-blur-xl sm:flex ${networkOnline ? 'border-emerald-200/80 bg-emerald-50/75 text-emerald-700' : 'border-rose-200/80 bg-rose-50/80 text-rose-700'}`}
         >
           {networkOnline ? (
             <>
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-55" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+              <span className="relative flex h-6 w-10 items-center rounded-full bg-emerald-600/15 p-0.5 ring-1 ring-emerald-500/20">
+                <span className="ml-auto h-5 w-5 rounded-full bg-emerald-500 shadow-[0_2px_8px_rgba(16,185,129,.42)]" />
               </span>
-              <span>Connected</span>
+              <span>Online</span>
             </>
           ) : (
             <>
+              <span className="relative flex h-6 w-10 items-center rounded-full bg-rose-600/15 p-0.5 ring-1 ring-rose-500/20">
+                <span className="h-5 w-5 rounded-full bg-rose-500 shadow-[0_2px_8px_rgba(244,63,94,.35)]" />
+              </span>
               <WifiOff className="h-3.5 w-3.5" />
-              <span>Disconnected</span>
+              <span>Offline</span>
             </>
           )}
         </div>

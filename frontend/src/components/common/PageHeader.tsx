@@ -14,7 +14,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   actions,
 }) => {
   return (
-    <div className="flex flex-col justify-between gap-4 border-b border-hotel-line pb-6 sm:flex-row sm:items-end">
+    <div className="page-header-glass flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
       <div>
         {kicker && <span className="kicker mb-1.5 block">{kicker}</span>}
         <h1 className="font-serif text-3xl font-semibold tracking-tight text-hotel-text sm:text-4xl">
