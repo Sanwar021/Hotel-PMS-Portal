@@ -9,7 +9,8 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "perf:budget": "node scripts/check-performance-budget.mjs",
-    "perf:login": "node scripts/benchmark-login.mjs"
+    "perf:login": "node scripts/benchmark-login.mjs",
+    "test:production": "node scripts/smoke-production.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.107.1",
