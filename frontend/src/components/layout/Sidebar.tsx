@@ -176,8 +176,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, collapsed, onClose, onTo
           </button>}
         </div>
       </div>
-      <button onClick={onToggleCollapse} className="absolute -right-3.5 top-[72px] hidden h-8 w-8 items-center justify-center rounded-full border border-white/80 bg-[#f7faf8]/95 text-[#174b40] shadow-[0_8px_24px_rgba(5,30,32,.24),inset_0_1px_0_white] backdrop-blur-xl transition duration-200 hover:scale-105 hover:bg-white lg:flex" aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
-        <ChevronLeft className={`h-4 w-4 transition-transform ${collapsed ? 'rotate-180' : ''}`} />
+      <button onClick={onToggleCollapse} className="group absolute -right-3 top-[72px] hidden h-[30px] w-[30px] items-center justify-center rounded-full border border-[#d7ad56]/45 bg-[#103f38]/92 text-[#efc66c] shadow-[0_9px_24px_rgba(2,19,21,.34),inset_0_1px_0_rgba(255,255,255,.14),0_0_0_3px_rgba(8,40,37,.12)] backdrop-blur-xl transition duration-200 hover:scale-105 hover:border-[#edc976]/70 hover:bg-[#185248] hover:text-[#ffe2a0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e7bd66]/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0b332f] lg:flex" aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
+        <ChevronLeft className={`h-3.5 w-3.5 stroke-[2.25] transition-transform duration-300 group-hover:-translate-x-px ${collapsed ? 'rotate-180 group-hover:translate-x-px' : ''}`} />
       </button>
     </aside>
   );
