@@ -14,6 +14,8 @@ import {
   Pencil,
   Trash2,
   Users,
+  Moon,
+  Sun,
 } from 'lucide-react';
 import { settingsApi, StaffAccountInput } from '../../api/endpoints';
 import { PageHeader } from '../../components/common/PageHeader';
@@ -21,6 +23,7 @@ import { Hotel, AuditLogItem, User, UserRole } from '../../types';
 import { SearchSortControls } from '../../components/common/SearchSortControls';
 import { Modal } from '../../components/common/Modal';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const USER_ROLES: { value: UserRole; label: string }[] = [
   { value: 'hotel_manager', label: 'Manager' }, { value: 'general_manager', label: 'General Manager' },
@@ -35,6 +38,7 @@ const blankAccount: StaffAccountInput = { username: '', email: '', first_name: '
 export const SettingsPage: React.FC = () => {
   const queryClient = useQueryClient();
   const { user: signedInUser } = useAuth();
+  const { isNightMode, toggleTheme } = useTheme();
   const [activeTab, setActiveTab] = useState<'hotel' | 'users' | 'audit'>('hotel');
   const [auditSearch, setAuditSearch] = useState('');
   const [auditSort, setAuditSort] = useState('newest');
@@ -175,6 +179,32 @@ export const SettingsPage: React.FC = () => {
 
       {activeTab === 'hotel' && (
         <form onSubmit={handleSaveHotel} className="space-y-6 max-w-4xl">
+          <section className="rounded-2xl border border-hotel-line bg-hotel-panel p-5 sm:p-6" aria-labelledby="appearance-heading">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-3">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-hotel-line bg-hotel-panel2 text-hotel-accent">
+                  {isNightMode ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+                </span>
+                <div>
+                  <span className="kicker">Appearance</span>
+                  <h2 id="appearance-heading" className="mt-1 text-base font-bold text-hotel-text">Night mode</h2>
+                  <p className="mt-1 max-w-xl text-xs leading-5 text-hotel-muted">Use the low-glare charcoal workspace across every operational module. Your choice is saved on this device.</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={isNightMode}
+                onClick={toggleTheme}
+                className={`theme-switch relative flex min-h-11 w-full items-center justify-between gap-3 rounded-xl border px-3 py-2 text-xs font-bold transition sm:w-auto ${isNightMode ? 'border-hotel-accent bg-hotel-accent/10 text-hotel-accent' : 'border-hotel-line bg-hotel-panel2 text-hotel-text'}`}
+              >
+                <span>{isNightMode ? 'Night mode on' : 'Night mode off'}</span>
+                <span className={`relative h-6 w-11 rounded-full transition ${isNightMode ? 'bg-hotel-accent' : 'bg-hotel-line'}`} aria-hidden="true">
+                  <span className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow transition-transform ${isNightMode ? 'translate-x-6' : 'translate-x-1'}`} />
+                </span>
+              </button>
+            </div>
+          </section>
           <div className="rounded-2xl border border-hotel-line bg-hotel-panel p-6 space-y-4">
             <span className="kicker">Brand Identity</span>
             <div className="grid grid-cols-2 gap-4 text-xs">

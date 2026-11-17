@@ -69,7 +69,8 @@ export const AppLayout: React.FC = () => {
   };
 
   return (
-    <div className="admin-shell premium-glass-shell min-h-screen text-hotel-text">
+    <div className="app-canvas admin-shell premium-glass-shell min-h-screen text-hotel-text">
+      <div className="window-controls" aria-hidden="true"><span /><span /><span /></div>
       <Sidebar
         open={sidebarOpen}
         collapsed={sidebarCollapsed}

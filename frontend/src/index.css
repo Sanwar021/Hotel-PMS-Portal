@@ -509,3 +509,148 @@ textarea {
   .glass-workspace > * { animation: none !important; }
   .glass-sidebar nav a:hover { transform: none; }
 }
+
+/* Night workspace — shared across every authenticated route. */
+html.night {
+  --admin-bg: #080a0c;
+  --admin-panel: #232a31;
+  --admin-panel2: #20272e;
+  --admin-line: #343c43;
+  --admin-text: #f1f4f6;
+  --admin-muted: #a0a9b1;
+  --admin-accent: #ff6819;
+  --admin-gold: #f5a623;
+  --color-hotel-bg: #080a0c;
+  --color-hotel-panel: #232a31;
+  --color-hotel-panel2: #20272e;
+  --color-hotel-surface: #171d22;
+  --color-hotel-line: #343c43;
+  --color-hotel-text: #f1f4f6;
+  --color-hotel-muted: #a0a9b1;
+  --color-hotel-accent: #ff6819;
+  --color-hotel-gold: #f5a623;
+  --color-hotel-ink: #f1f4f6;
+  --color-hotel-deep: #080a0c;
+  --color-hotel-deep2: #1b2127;
+  background: #080a0c;
+}
+
+html.night body {
+  background-color: #080a0c;
+  background-image:
+    linear-gradient(30deg, transparent 47%, rgba(112,122,131,.08) 48%, rgba(112,122,131,.08) 50%, transparent 51%),
+    linear-gradient(150deg, transparent 47%, rgba(112,122,131,.055) 48%, rgba(112,122,131,.055) 50%, transparent 51%),
+    radial-gradient(circle at 20% 30%, transparent 0 8px, rgba(112,122,131,.06) 9px 10px, transparent 11px),
+    radial-gradient(circle at 75% 65%, transparent 0 13px, rgba(112,122,131,.045) 14px 15px, transparent 16px);
+  background-size: 78px 78px, 78px 78px, 112px 112px, 146px 146px;
+  color: #f1f4f6;
+}
+
+html.night ::-webkit-scrollbar-track { background: #171d22; }
+html.night ::-webkit-scrollbar-thumb { background: #46515a; }
+html.night :focus-visible { outline-color: rgba(255,104,25,.72); }
+
+html.night .premium-glass-shell {
+  min-height: calc(100vh - 32px);
+  margin: 16px;
+  overflow: clip;
+  border: 1px solid #343c43;
+  border-radius: 36px;
+  background: #1b2127;
+  box-shadow: 0 30px 90px rgba(0,0,0,.72), inset 0 1px rgba(255,255,255,.025);
+}
+
+html.night .premium-glass-shell::before { background: none; }
+html.night .window-controls {
+  position: fixed;
+  top: 30px;
+  left: 36px;
+  z-index: 60;
+  display: flex;
+  gap: 7px;
+}
+html.night .window-controls span { width: 10px; height: 10px; border-radius: 999px; }
+html.night .window-controls span:nth-child(1) { background: #f0526e; }
+html.night .window-controls span:nth-child(2) { background: #f5a623; }
+html.night .window-controls span:nth-child(3) { background: #24c79a; }
+
+html.night .glass-sidebar {
+  bottom: 28px;
+  left: 28px;
+  top: 56px;
+  border-color: #343c43;
+  background: #171d22;
+  box-shadow: 16px 0 42px rgba(0,0,0,.32), inset -1px 0 rgba(255,255,255,.02);
+}
+html.night .glass-sidebar::after { background: none; }
+html.night .glass-sidebar nav a[aria-current="page"] { background: rgba(255,104,25,.12) !important; color: #ff6819 !important; }
+html.night .glass-sidebar nav a::before { background: #ff6819; box-shadow: 0 0 14px rgba(255,104,25,.55); }
+
+html.night .glass-topbar {
+  top: 16px;
+  border-color: #343c43 !important;
+  background: rgba(27,33,39,.96);
+  box-shadow: 0 10px 30px rgba(0,0,0,.24);
+}
+html.night .glass-topbar [class~="bg-white"],
+html.night .glass-topbar [class*="bg-[#fffefb]"],
+html.night .glass-topbar [class*="rgba(255,255,255"] { background: #20272e !important; }
+html.night .glass-topbar [class*="text-[#14"],
+html.night .glass-topbar [class*="text-[#17"],
+html.night .glass-topbar [class*="text-[#31"] { color: #f1f4f6 !important; }
+
+html.night .glass-workspace { background: #1b2127; }
+html.night .dashboard-glass {
+  border-color: #2a3137;
+  background: #1b2127;
+  box-shadow: none;
+}
+html.night .dashboard-glass::before { background: radial-gradient(circle at 80% 0%, rgba(69,203,215,.055), transparent 30%); }
+
+html.night .dashboard-glass > :first-child,
+html.night .dashboard-glass [class~="bg-hotel-panel"],
+html.night .glass-workspace > *:not(.dashboard-glass) [class~="bg-hotel-panel"],
+html.night .glass-workspace > *:not(.dashboard-glass) [class~="bg-hotel-panel2"],
+html.night .glass-workspace > *:not(.dashboard-glass) [role="dialog"] {
+  border-color: #343c43 !important;
+  background: #232a31 !important;
+  box-shadow: 0 12px 34px rgba(0,0,0,.22), inset 0 1px rgba(255,255,255,.025) !important;
+  backdrop-filter: none;
+}
+html.night .page-header-glass {
+  border-color: #343c43;
+  background: #20272e;
+  box-shadow: 0 14px 38px rgba(0,0,0,.2);
+}
+html.night .page-header-glass::after { background: #ff6819; }
+html.night .page-header-glass h1 { color: #f1f4f6 !important; text-shadow: none; }
+html.night .page-header-glass p { color: #a0a9b1 !important; }
+html.night .page-header-glass .kicker, html.night .kicker { color: #ff6819 !important; }
+
+html.night .admin-shell input,
+html.night .admin-shell textarea,
+html.night .admin-shell select,
+html.night .glass-workspace input,
+html.night .glass-workspace select,
+html.night .glass-workspace textarea,
+html.night .glass-topbar input {
+  color-scheme: dark;
+  border-color: #343c43 !important;
+  background: #171d22 !important;
+  color: #f1f4f6 !important;
+  box-shadow: none;
+}
+html.night .admin-shell input::placeholder, html.night .admin-shell textarea::placeholder { color: #707a83; }
+html.night .glass-workspace table thead { background: #20272e; }
+html.night .glass-workspace table tbody tr:hover,
+html.night .admin-shell tr:hover { background: rgba(255,255,255,.035) !important; }
+html.night .admin-shell [class*="hover:bg-[#f"]:hover { background: rgba(255,255,255,.04) !important; }
+html.night .admin-shell button[class*="bg-hotel-accent"] { color: #17120f; }
+html.night .theme-switch { box-shadow: none !important; }
+
+@media (max-width: 1023px) {
+  html.night .premium-glass-shell { min-height: 100vh; margin: 0; border: 0; border-radius: 0; }
+  html.night .glass-topbar { top: 0; }
+  html.night .window-controls { display: none; }
+  html.night .glass-sidebar { inset-block: .5rem; left: .5rem; }
+}

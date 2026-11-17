@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { SocketProvider } from './contexts/SocketContext';
 import { AppErrorBoundary } from './components/common/AppErrorBoundary';
+import { ThemeProvider } from './contexts/ThemeContext';
 
 const LoginPage = lazy(() => import('./pages/login/LoginPage').then((module) => ({ default: module.LoginPage })));
 const AppLayout = lazy(() => import('./components/layout/AppLayout').then((module) => ({ default: module.AppLayout })));
@@ -59,6 +60,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
 export default function App() {
   return (
+    <ThemeProvider>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <SocketProvider>
@@ -102,5 +104,6 @@ export default function App() {
         </SocketProvider>
       </AuthProvider>
     </QueryClientProvider>
+    </ThemeProvider>
   );
 }

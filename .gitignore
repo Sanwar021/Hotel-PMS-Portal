@@ -32,3 +32,5 @@ hotelos-api
 .DS_Store
 Thumbs.db
 
+
+.vercel
